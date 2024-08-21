@@ -1,4 +1,3 @@
----
 name: Build - Windows
 
 on:
@@ -6,7 +5,7 @@ on:
   pull_request:
   push:
     branches:
-      - main
+    - main
 
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 2
@@ -19,60 +18,63 @@ jobs:
     strategy:
       matrix:
         os: [windows-2022]
-        buildtype: [windows-release, windows-release-asan, windows-debug]
+        buildtype: [windows-release]
         include:
-          - os: windows-2022
-            triplet: x64-windows
-            packages: >
-              sccache
-
+        - os: windows-2022
+          triplet: x64-windows
+          packages: >
+            sccache #magic___^_^___line
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@main
+    - name: Checkout repository
+      uses: actions/checkout@main
 
-      - name: CCache
-        uses: hendrikmuhs/ccache-action@main
-        with:
-          max-size: "1G"
-          variant: "sccache"
-          key: ccache-${{ matrix.os }}-${{ matrix.buildtype }}
-          restore-keys: |
-            ccache-${{ matrix.os }}
+    - name: CCache
+      uses: hendrikmuhs/ccache-action@main
+      with:
+        max-size: "1G"
+        variant: "sccache"
+        key: ccache-${{ matrix.os }}-${{ matrix.buildtype }}
+        restore-keys: |
+          ccache-${{ matrix.os }}
 
-      - name: Restore artifacts and install vcpkg
-        id: vcpkg-step
-        run: |
-          $json=Get-Content vcpkg.json -Raw | ConvertFrom-Json
-          $vcpkgCommitId=$json.'builtin-baseline'
-          Write-Host "vcpkg commit ID: $vcpkgCommitId"
-          echo "vcpkgGitCommitId=$vcpkgCommitId" >> "$GITHUB_OUTPUT"
+    - name: Restore artifacts and install vcpkg
+      id: vcpkg-step
+      run: |
+        $json=Get-Content vcpkg.json -Raw | ConvertFrom-Json
+        $vcpkgCommitId=$json.'builtin-baseline'
+        Write-Host "vcpkg commit ID: $vcpkgCommitId"
+        echo "vcpkgGitCommitId=$vcpkgCommitId" >> "$GITHUB_OUTPUT"
 
-      - name: Get vcpkg commit id from vcpkg.json
-        uses: lukka/run-vcpkg@main
-        with:
-          vcpkgGitURL: "https://github.com/microsoft/vcpkg.git"
-          vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
+    - name: Get vcpkg commit id from vcpkg.json
+      uses: lukka/run-vcpkg@main
+      with:
+        vcpkgGitURL: "https://github.com/microsoft/vcpkg.git"
+        vcpkgGitCommitId: ${{ steps.vcpkg-step.outputs.vcpkgGitCommitId }}
 
-      - name: Get latest CMake and ninja
-        uses: lukka/get-cmake@main
+    - name: Get latest CMake and ninja
+      uses: lukka/get-cmake@main
 
-      - name: Run CMake
-        uses: lukka/run-cmake@main
-        with:
-          configurePreset: ${{ matrix.buildtype }}
-          buildPreset: ${{ matrix.buildtype }}
+    - name: Run CMake
+      uses: lukka/run-cmake@main
+      with:
+        configurePreset: ${{ matrix.buildtype }}
+        buildPreset: ${{ matrix.buildtype }}
 
-      - name: Create and Upload Artifact (exe)
-        uses: actions/upload-artifact@main
-        with:
-          name: otclient-${{ matrix.os }}-${{ matrix.buildtype }}-${{ github.sha }}
-          path: |
-            ${{ github.workspace }}/otclient.exe
+    - name: Create and Upload Artifact (exe)
+      uses: actions/upload-artifact@main
+      with:
+        name: otclient-${{ matrix.os }}-${{ matrix.buildtype }}-${{ github.sha }}
+        path: |
+          ${{ github.workspace }}/otclient.exe
 
-      - name: Create and Upload Artifact (dlls)
-        uses: actions/upload-artifact@main
-        with:
-          name: otclient-dlls-${{ matrix.os }}-${{ matrix.buildtype }}-${{ github.sha }}
-          path: |
-            ${{ github.workspace }}/*.dll
+    - name: Create Zip File
+      run: |
+        # Create a zip file with the desired contents
+        powershell Compress-Archive -Path "$($env:GITHUB_WORKSPACE)/data", "$($env:GITHUB_WORKSPACE)/mods", "$($env:GITHUB_WORKSPACE)/modules", "$($env:GITHUB_WORKSPACE)/init.lua" -DestinationPath "$($env:GITHUB_WORKSPACE)/release-${{ matrix.os }}-${{ matrix.buildtype }}-${{ github.sha }}.zip"
 
+    - name: Upload Zip Artifact
+      uses: actions/upload-artifact@main
+      with:
+        name: release-${{ matrix.os }}-${{ matrix.buildtype }}-${{ github.sha }}
+        path: |
+          ${{ github.workspace }}/release-${{ matrix.os }}-${{ matrix.buildtype }}-${{ github.sha }}.zip
