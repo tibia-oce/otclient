@@ -67,14 +67,25 @@ jobs:
         path: |
           ${{ github.workspace }}/otclient.exe
 
-    - name: Create Zip File
+    - name: Create Temporary Directory
       run: |
-        # Create a zip file with the desired contents
-        powershell Compress-Archive -Path "$($env:GITHUB_WORKSPACE)/data", "$($env:GITHUB_WORKSPACE)/mods", "$($env:GITHUB_WORKSPACE)/modules", "$($env:GITHUB_WORKSPACE)/init.lua" -DestinationPath "$($env:GITHUB_WORKSPACE)/release-${{ matrix.os }}-${{ matrix.buildtype }}-${{ github.sha }}.zip"
+        $tempDir = "$env:GITHUB_WORKSPACE/tempDir"
+        New-Item -Path $tempDir -ItemType Directory -Force
 
-    - name: Upload Zip Artifact
+    - name: Move Files to Temporary Directory
+      run: |
+        # Move the desired files into the temporary directory
+        Move-Item -Path "$env:GITHUB_WORKSPACE/data" -Destination "$env:GITHUB_WORKSPACE/tempDir" -Recurse -Force
+        Move-Item -Path "$env:GITHUB_WORKSPACE/mods" -Destination "$env:GITHUB_WORKSPACE/tempDir" -Recurse -Force
+        Move-Item -Path "$env:GITHUB_WORKSPACE/modules" -Destination "$env:GITHUB_WORKSPACE/tempDir" -Recurse -Force
+        Move-Item -Path "$env:GITHUB_WORKSPACE/init.lua" -Destination "$env:GITHUB_WORKSPACE/tempDir" -Force
+
+    - name: Upload Temporary Directory
       uses: actions/upload-artifact@main
       with:
         name: release-${{ matrix.os }}-${{ matrix.buildtype }}-${{ github.sha }}
-        path: |
-          ${{ github.workspace }}/release-${{ matrix.os }}-${{ matrix.buildtype }}-${{ github.sha }}.zip
+        path: ${{ github.workspace }}/tempDir
+
+    - name: Clean Up
+      run: |
+        Remove-Item -Path "$env:GITHUB_WORKSPACE/tempDir" -Recurse -Force
