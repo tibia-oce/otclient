@@ -88,17 +88,6 @@ EnterGameWindow
       self:getParent():getChildById('autoLoginBox'):setEnabled(self:isChecked())
       self:getParent():getChildById('rememberEmailTip'):setOn(self:isChecked())
 
-    opacity: 0.8
-    margin-top: 32
-    @onClick: EnterGame.createAccountWebsite()
-    @onSetup: | 
-        if Services and Services.websites then
-            self:setVisible(true)
-        else
-            self:setVisible(false)
-            self:hide()
-        end
-
   MenuLabel
     id: authenticatorTokenLabel
     !text: tr('Authenticator Token')
@@ -205,7 +194,7 @@ EnterGameWindow
     id: autoLoginBox
     enabled: false
     !text: tr('Auto login')
-    !tooltip: tr('Open charlist automatically when starting client')
+    !tooltip: tr('Open character list automatically when starting client')
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.top: rememberEmailBox.bottom

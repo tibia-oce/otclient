@@ -348,12 +348,7 @@ MainWindow
     anchors.left: parent.left
     anchors.bottom: parent.bottom
     @onSetup: |
-      if g_game.getFeature(GameEnterGameShowAppearance) then
-        self:setWidth(140)
-      else
-        self:setWidth(140)
-        self:setFont('small-11px')
-      end
+      self:setWidth(140)
     $!on:
       image-color: red    
     $on:
