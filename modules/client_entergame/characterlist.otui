@@ -351,8 +351,8 @@ MainWindow
       if g_game.getFeature(GameEnterGameShowAppearance) then
         self:setWidth(140)
       else
-        self:setWidth(75)
-        self:setFont('small-9px')
+        self:setWidth(140)
+        self:setFont('small-11px')
       end
     $!on:
       image-color: red    
