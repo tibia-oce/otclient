@@ -93,7 +93,7 @@ return {
         end
     },
     enableLights                      = {
-        value = true,
+        value = false,
         action = function(value, options, controller, panels, extraWidgets)
             panels.gameMapPanel:setDrawLights(value and options.ambientLight.value < 100)
             panels.graphicsEffectsPanel:recursiveGetChildById('ambientLight'):setEnabled(value)
