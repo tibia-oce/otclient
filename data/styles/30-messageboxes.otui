@@ -112,7 +112,7 @@ MessageBoxShopWindow < UIMessageBox
     anchors.top: content.bottom
     margin-top: 10
     margin-left: 10
-    image-source:  /game_shop/images/panel_flat
+    image-source:  /game_store/images/panel_flat
     image-border: 1
   Label
     id: additionalLabel
@@ -121,7 +121,7 @@ MessageBoxShopWindow < UIMessageBox
     anchors.top: content.bottom
     margin-top: 10
     margin-left: 100
-    image-source:  /game_shop/images/panel_flat
+    image-source:  /game_store/images/panel_flat
     image-border: 1
     text-wrap: true
 

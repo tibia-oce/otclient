@@ -163,7 +163,7 @@ function optionsController:onInit()
 end
 
 function toggleStore()
-    modules.game_shop.toggle()
+    modules.game_store.toggle()
 end
 
 function optionsController:onTerminate()

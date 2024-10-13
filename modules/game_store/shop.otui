@@ -134,7 +134,7 @@ MainWindow
   id: shopWindow
   !text: tr('Shop')
   size: 750 500
-  @onEscape: modules.game_shop.hide()
+  @onEscape: modules.game_store.hide()
   $mobile:
     size: 500 360
 
@@ -226,7 +226,7 @@ MainWindow
     width: 128
     anchors.left: parent.left
     anchors.bottom: parent.bottom
-    @onClick: modules.game_shop.showHistory()
+    @onClick: modules.game_store.showHistory()
 
   Label
     id: transferOpen
@@ -241,4 +241,4 @@ MainWindow
     width: 64
     anchors.right: parent.right
     anchors.bottom: parent.bottom
-    @onClick: modules.game_shop.hide()
+    @onClick: modules.game_store.hide()
