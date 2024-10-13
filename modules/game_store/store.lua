@@ -142,7 +142,7 @@ function createShop()
     if shop then
         return
     end
-    shop = g_ui.displayUI('shop')
+    shop = g_ui.displayUI('store')
     shop:hide()
    -- shopButton = modules.game_mainpanel.addStoreButton('store', tr('Shop'), '/images/options/store_large', toggle,false, 8) -- \game_mainpanel\mainpanel.lua
     shopButton = nil
