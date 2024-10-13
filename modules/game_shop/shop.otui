@@ -159,8 +159,8 @@ MainWindow
       width: 150
       anchors.top: prev.bottom
       margin-top: 10
-      visible: false
-      !text: tr("Buy points2")
+      visible: true
+      !text: tr("Buy points")
 
   Panel
     id: adPanel
@@ -230,12 +230,10 @@ MainWindow
 
   Label
     id: transferOpen
-    !text: tr('by kondra (otclient@otclient.ovh)')
     width: 450
     anchors.left: prev. right
     margin-left: 45
     anchors.verticalCenter: prev.verticalCenter
-
 
   Button
     id: buttonCancel
