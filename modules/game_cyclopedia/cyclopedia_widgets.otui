@@ -1365,7 +1365,7 @@ bestiaryTrackerMenu < PopupMenu
 StoreFlatPanel < UIWidget
   phantom: true
   auto-focus: first
-  image-source: /game_store/images/panel
+  image-source: /game_shop/images/panel
   image-border: 3
 Box < UIWidget
   border-width-top: 1

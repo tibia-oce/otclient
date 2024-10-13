@@ -266,7 +266,7 @@ Window
         image-border: 3
         @onClick: |
           if g_game.getClientVersion() >= 1332 then
-            modules.game_store.toggle()
+            modules.game_shop.toggle()
           else
             modules.game_shop.toggle()
           end

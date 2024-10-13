@@ -179,7 +179,7 @@ function UIMessageBox.displaySHOP(title, message,description,data, buttons, onEn
             itemWidget:setVirtual(true)
         elseif VALOR == "icon" then
             local widget = g_ui.createWidget('UIWidget', messageBox.Box)
-            widget:setImageSource("/game_store/images/64/" .. ID)
+            widget:setImageSource("/game_shop/images/64/" .. ID)
             widget:fill('parent')
         elseif VALOR == "mountId" or VALOR == "outfitId" or VALOR == "maleOutfitId" or VALOR == "outfitId" then
             local creature = g_ui.createWidget('Creature', messageBox.Box)
