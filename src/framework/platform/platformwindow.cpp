@@ -25,14 +25,17 @@
 #ifdef WIN32
 #include "win32window.h"
 WIN32Window window;
-#elif defined ANDROID
+#elif defined(ANDROID)
 #include "androidwindow.h"
 AndroidWindow window;
+#elif defined(__APPLE__)
+#include "macwindow.h"
+MacWindow window;
 #else
 #include "x11window.h"
-#include <framework/core/clock.h>
 X11Window window;
 #endif
+
 
 #include <framework/core/clock.h>
 #include <framework/graphics/image.h>

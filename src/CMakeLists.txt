@@ -196,10 +196,16 @@ find_package(STDUUID CONFIG REQUIRED)
 find_package(pugixml CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(httplib CONFIG REQUIRED)
+find_package(OpenAL CONFIG REQUIRED)
 if(APPLE)
 	# Required for Physfs
 	find_library(FOUNDATION Foundation REQUIRED)
 	find_library(IOKIT IOKit REQUIRED)
+	add_compile_options(-Wno-deprecated-declarations)
+	target_include_directories(${PROJECT_NAME}
+	  BEFORE PRIVATE
+	  "${CMAKE_BINARY_DIR}/vcpkg_installed/arm64-osx/include"
+	)
 endif()
 if(UNIX AND NOT ANDROID)
 	find_package(X11 REQUIRED)
@@ -349,54 +355,63 @@ set(SOURCE_FILES
 
 if (TOGGLE_FRAMEWORK_GRAPHICS)
 	set(SOURCE_FILES ${SOURCE_FILES}
-		framework/core/adaptativeframecounter.cpp
-		framework/core/graphicalapplication.cpp
-		framework/core/garbagecollection.cpp
-		framework/input/mouse.cpp
-		framework/graphics/animatedtexture.cpp
-		framework/graphics/apngloader.cpp
-		framework/graphics/bitmapfont.cpp
-		framework/graphics/cachedtext.cpp
-		framework/graphics/coordsbuffer.cpp
-		framework/graphics/drawpool.cpp
-		framework/graphics/drawpoolmanager.cpp
-		framework/graphics/fontmanager.cpp
-		framework/graphics/framebuffer.cpp
-		framework/graphics/graphics.cpp
-		framework/graphics/hardwarebuffer.cpp
-		framework/graphics/image.cpp
-		framework/graphics/painter.cpp
-		framework/graphics/paintershaderprogram.cpp
-		framework/graphics/particle.cpp
-		framework/graphics/particleaffector.cpp
-		framework/graphics/particleeffect.cpp
-		framework/graphics/particleemitter.cpp
-		framework/graphics/particlemanager.cpp
-		framework/graphics/particlesystem.cpp
-		framework/graphics/particletype.cpp
-		framework/graphics/shader.cpp
-		framework/graphics/shaderprogram.cpp
-		framework/graphics/texture.cpp
-		framework/graphics/texturemanager.cpp
-		framework/graphics/shadermanager.cpp
-		framework/platform/win32window.cpp
-		framework/platform/x11window.cpp
-		framework/ui/uianchorlayout.cpp
-		framework/ui/uiboxlayout.cpp
-		framework/ui/uigridlayout.cpp
-		framework/ui/uihorizontallayout.cpp
-		framework/ui/uilayout.cpp
-		framework/ui/uimanager.cpp
-		framework/ui/uiparticles.cpp
-		framework/ui/uitextedit.cpp
-		framework/ui/uitranslator.cpp
-		framework/ui/uiverticallayout.cpp
-		framework/ui/uiwidget.cpp
-		framework/ui/uiwidgetbasestyle.cpp
-		framework/ui/uiwidgetimage.cpp
-		framework/ui/uiwidgettext.cpp
-		framework/ui/uiqrcode.cpp
-	)
+        framework/core/adaptativeframecounter.cpp
+        framework/core/graphicalapplication.cpp
+        framework/core/garbagecollection.cpp
+        framework/input/mouse.cpp
+        framework/graphics/animatedtexture.cpp
+        framework/graphics/apngloader.cpp
+        framework/graphics/bitmapfont.cpp
+        framework/graphics/cachedtext.cpp
+        framework/graphics/coordsbuffer.cpp
+        framework/graphics/drawpool.cpp
+        framework/graphics/drawpoolmanager.cpp
+        framework/graphics/fontmanager.cpp
+        framework/graphics/framebuffer.cpp
+        framework/graphics/graphics.cpp
+        framework/graphics/hardwarebuffer.cpp
+        framework/graphics/image.cpp
+        framework/graphics/painter.cpp
+        framework/graphics/paintershaderprogram.cpp
+        framework/graphics/particle.cpp
+        framework/graphics/particleaffector.cpp
+        framework/graphics/particleeffect.cpp
+        framework/graphics/particleemitter.cpp
+        framework/graphics/particlemanager.cpp
+        framework/graphics/particlesystem.cpp
+        framework/graphics/particletype.cpp
+        framework/graphics/shader.cpp
+        framework/graphics/shaderprogram.cpp
+        framework/graphics/texture.cpp
+        framework/graphics/texturemanager.cpp
+        framework/graphics/shadermanager.cpp
+
+        # Windows code, harmlessly included but won’t compile on macOS unless forced
+        framework/platform/win32window.cpp
+
+        framework/ui/uianchorlayout.cpp
+        framework/ui/uiboxlayout.cpp
+        framework/ui/uigridlayout.cpp
+        framework/ui/uihorizontallayout.cpp
+        framework/ui/uilayout.cpp
+        framework/ui/uimanager.cpp
+        framework/ui/uiparticles.cpp
+        framework/ui/uitextedit.cpp
+        framework/ui/uitranslator.cpp
+        framework/ui/uiverticallayout.cpp
+        framework/ui/uiwidget.cpp
+        framework/ui/uiwidgetbasestyle.cpp
+        framework/ui/uiwidgetimage.cpp
+        framework/ui/uiwidgettext.cpp
+        framework/ui/uiqrcode.cpp
+    )
+
+    # Add x11window.cpp ONLY if on non-Apple systems
+    if(UNIX AND NOT APPLE)
+        list(APPEND SOURCE_FILES
+            framework/platform/x11window.cpp
+        )
+    endif()
 endif()
 
 if (TOGGLE_FRAMEWORK_SOUND)

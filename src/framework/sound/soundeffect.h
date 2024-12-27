@@ -25,6 +25,12 @@
 #include "declarations.h"
 #include <framework/luaengine/luaobject.h>
 
+#define AL_ALEXT_PROTOTYPES
+#include <AL/al.h>
+#include <AL/alc.h>
+#include <AL/efx.h>
+#include <AL/efx-presets.h>
+
 class SoundEffect : public LuaObject
 {
 

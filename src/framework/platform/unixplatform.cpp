@@ -48,7 +48,7 @@ void Platform::init(std::vector<std::string>& args)
     #else
         setDevice({ Desktop, macOS });
     #endif
-#elifdef ANDROID
+#elif defined(ANDROID)
     setDevice({ Mobile, Android });
 #else
     setDevice({ Desktop, Linux });

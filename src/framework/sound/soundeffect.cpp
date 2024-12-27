@@ -29,38 +29,13 @@
 
 #include "framework/stdext/time.h"
 
+#define AL_ALEXT_PROTOTYPES
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <AL/efx.h>
 #include <AL/efx-presets.h>
 
 #include <unordered_map>
-
- /* Effect object functions */
-static LPALGENEFFECTS alGenEffects;
-static LPALDELETEEFFECTS alDeleteEffects;
-static LPALISEFFECT alIsEffect;
-static LPALEFFECTI alEffecti;
-static LPALEFFECTIV alEffectiv;
-static LPALEFFECTF alEffectf;
-static LPALEFFECTFV alEffectfv;
-static LPALGETEFFECTI alGetEffecti;
-static LPALGETEFFECTIV alGetEffectiv;
-static LPALGETEFFECTF alGetEffectf;
-static LPALGETEFFECTFV alGetEffectfv;
-
-/* Auxiliary Effect Slot object functions */
-static LPALGENAUXILIARYEFFECTSLOTS alGenAuxiliaryEffectSlots;
-static LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots;
-static LPALISAUXILIARYEFFECTSLOT alIsAuxiliaryEffectSlot;
-static LPALAUXILIARYEFFECTSLOTI alAuxiliaryEffectSloti;
-static LPALAUXILIARYEFFECTSLOTIV alAuxiliaryEffectSlotiv;
-static LPALAUXILIARYEFFECTSLOTF alAuxiliaryEffectSlotf;
-static LPALAUXILIARYEFFECTSLOTFV alAuxiliaryEffectSlotfv;
-static LPALGETAUXILIARYEFFECTSLOTI alGetAuxiliaryEffectSloti;
-static LPALGETAUXILIARYEFFECTSLOTIV alGetAuxiliaryEffectSlotiv;
-static LPALGETAUXILIARYEFFECTSLOTF alGetAuxiliaryEffectSlotf;
-static LPALGETAUXILIARYEFFECTSLOTFV alGetAuxiliaryEffectSlotfv;
 
 // Remove duplicates from the EffectPresets map
 const std::unordered_map<std::string, EFXEAXREVERBPROPERTIES> EffectPresets{
@@ -189,6 +164,7 @@ const std::unordered_map<std::string, EFXEAXREVERBPROPERTIES> EffectPresets{
 	{"smallWaterRoom", EFX_REVERB_PRESET_SMALLWATERROOM},
 };
 
+// TODO: Remove as no longer loading pointers from library
 template <typename T>
 T LoadProcAddress(const char* name) {
     void const* addr = alGetProcAddress(name);
@@ -201,32 +177,7 @@ T LoadProcAddress(const char* name) {
 #define LOAD_PROC(x) x = LoadProcAddress<decltype(x)>(#x)
 
 void SoundEffect::init(ALCdevice* device) {
-
     m_device = device;
-
-    LOAD_PROC(alGenEffects);
-    LOAD_PROC(alDeleteEffects);
-    LOAD_PROC(alIsEffect);
-    LOAD_PROC(alEffecti);
-    LOAD_PROC(alEffectiv);
-    LOAD_PROC(alEffectf);
-    LOAD_PROC(alEffectfv);
-    LOAD_PROC(alGetEffecti);
-    LOAD_PROC(alGetEffectiv);
-    LOAD_PROC(alGetEffectf);
-    LOAD_PROC(alGetEffectfv);
-
-    LOAD_PROC(alGenAuxiliaryEffectSlots);
-    LOAD_PROC(alDeleteAuxiliaryEffectSlots);
-    LOAD_PROC(alIsAuxiliaryEffectSlot);
-    LOAD_PROC(alAuxiliaryEffectSloti);
-    LOAD_PROC(alAuxiliaryEffectSlotiv);
-    LOAD_PROC(alAuxiliaryEffectSlotf);
-    LOAD_PROC(alAuxiliaryEffectSlotfv);
-    LOAD_PROC(alGetAuxiliaryEffectSloti);
-    LOAD_PROC(alGetAuxiliaryEffectSlotiv);
-    LOAD_PROC(alGetAuxiliaryEffectSlotf);
-    LOAD_PROC(alGetAuxiliaryEffectSlotfv);
 }
 
 SoundEffect::SoundEffect(ALCdevice* device) : m_device(device) {
