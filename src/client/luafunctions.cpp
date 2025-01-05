@@ -730,7 +730,6 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<Item>("getContainerItem", &Item::getContainerItem);
 
     g_lua.bindClassMemberFunction<Item>("getLootCategory", &Item::getLootCategory);
-    g_lua.bindClassMemberFunction<Item>("getRarityId", &Item::getRarityId);
 
     g_lua.bindClassMemberFunction<Item>("getDescription", &Item::getDescription);
     g_lua.bindClassMemberFunction<Item>("getText", &Item::getText);

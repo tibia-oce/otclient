@@ -158,13 +158,6 @@ public:
     void setLootCategory(uint16_t categoryId) { m_attribs.set(ATTR_LOOT_CATEGORY, categoryId); }
     uint16_t getLootCategory() { return m_attribs.get<uint16_t>(ATTR_LOOT_CATEGORY); }
 
-void setRarityId(uint8_t rarityId) {
-    m_rarityId = rarityId;
-}
-uint8_t getRarityId() {
-    return m_rarityId;
-}
-
 private:
     ThingType* getThingType() const override;
 
@@ -174,7 +167,6 @@ private:
     uint16_t m_countOrSubType{ 0 };
     uint32_t m_durationTime{ 0 };
     uint8_t m_tier{ 0 };
-    uint8_t m_rarityId;
 
     Color m_color{ Color::white };
 

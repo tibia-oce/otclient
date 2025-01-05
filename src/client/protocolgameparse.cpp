@@ -3660,8 +3660,6 @@ ItemPtr ProtocolGame::getItem(const InputMessagePtr& msg, int id)
         item->setTooltip(msg->getString());
     }
 
-    item->setRarityId(msg->getU8());
-
     return item;
 }
 
