@@ -403,3 +403,17 @@ end
 function getSlot5()
     return inventoryController.ui.onPanel.shield
 end
+
+function onInventoryChange(player, slot, item, oldItem)
+  if slot > InventorySlotPurse then return end
+  if slot == InventorySlotPurse then return end
+
+  local itemWidget = inventoryPanel:getChildById('slot' .. slot)
+  if item then
+    itemWidget:setStyle('InventoryItem')
+    itemWidget:setItem(item)
+  else
+    itemWidget:setStyle(InventorySlotStyles[slot])
+    itemWidget:setItem(nil)
+  end
+end

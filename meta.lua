@@ -1283,6 +1283,11 @@ function Container:getItem(slot) end
 ---@return Item[]
 function Container:getItems() end
 
+---@param slot integer
+---@param item Item
+---@param categoryId integer
+function Container:onUpdateItem(slot, item, categoryId) end
+
 ---@return integer
 function Container:getItemsCount() end
 
@@ -1443,6 +1448,9 @@ function Thing:isPlayer() end
 
 ---@return boolean
 function Thing:isLocalPlayer() end
+
+---@return integer
+function Thing:getLootCategory() end
 
 ---@return boolean
 function Thing:isGround() end
@@ -2523,7 +2531,8 @@ function LocalPlayer:setKnown(known) end
 
 ---@param slot integer
 ---@param item Item
-function LocalPlayer:setInventoryItem(slot, item) end
+---@param categoryId integer
+function LocalPlayer:setInventoryItem(slot, item, categoryId) end
 
 ---@return number
 function LocalPlayer:getStates() end

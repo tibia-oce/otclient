@@ -65,6 +65,7 @@ enum ItemAttr : uint8_t
     ATTR_ARTICLE = 41,
     ATTR_SCRIPTPROTECTED = 42,
     ATTR_DUALWIELD = 43,
+    ATTR_LOOT_CATEGORY = 44,
     ATTR_ATTRIBUTE_MAP = 128,
     ATTR_LAST
 };
@@ -154,6 +155,9 @@ public:
     void clearContainerItems() { m_containerItems.clear(); }
 #endif
 
+    void setLootCategory(uint16_t categoryId) { m_attribs.set(ATTR_LOOT_CATEGORY, categoryId); }
+    uint16_t getLootCategory() { return m_attribs.get<uint16_t>(ATTR_LOOT_CATEGORY); }
+
 private:
     ThingType* getThingType() const override;
 
@@ -169,14 +173,12 @@ private:
     uint8_t m_phase{ 0 };
     ticks_t m_lastPhase{ 0 };
 
+
     bool m_async{ true };
     std::string m_tooltip;
-
-#ifdef FRAMEWORK_EDITOR
     uint16_t m_serverId{ 0 };
     stdext::dynamic_storage<ItemAttr> m_attribs;
     ItemVector m_containerItems;
-#endif
 };
 
 #pragma pack(pop)

@@ -43,6 +43,10 @@ function init()
         onLoginAdvice = onLoginAdvice
     }, true)
 
+    connect(LocalPlayer, {
+		onUpdateAutoloot = onUpdateAutoloot
+	})
+
     -- Call load AFTER game window has been created and
     -- resized to a stable state, otherwise the saved
     -- settings can get overridden by false onGeometryChange
@@ -127,56 +131,40 @@ function init()
     if g_game.isOnline() then
         show()
     end
-
-    StatsBar.init()
 end
 
 function bindKeys()
-    gameRootPanel:setAutoRepeatDelay(200)
+  gameRootPanel:setAutoRepeatDelay(10)
 
-    bindWalkKey('Up', North)
-    bindWalkKey('Right', East)
-    bindWalkKey('Down', South)
-    bindWalkKey('Left', West)
-    bindWalkKey('Numpad8', North)
-    bindWalkKey('Numpad9', NorthEast)
-    bindWalkKey('Numpad6', East)
-    bindWalkKey('Numpad3', SouthEast)
-    bindWalkKey('Numpad2', South)
-    bindWalkKey('Numpad1', SouthWest)
-    bindWalkKey('Numpad4', West)
-    bindWalkKey('Numpad7', NorthWest)
+  bindWalkKey('Up', North)
+  bindWalkKey('Right', East)
+  bindWalkKey('Down', South)
+  bindWalkKey('Left', West)
+  bindWalkKey('Numpad8', North)
+  bindWalkKey('Numpad9', NorthEast)
+  bindWalkKey('Numpad6', East)
+  bindWalkKey('Numpad3', SouthEast)
+  bindWalkKey('Numpad2', South)
+  bindWalkKey('Numpad1', SouthWest)
+  bindWalkKey('Numpad4', West)
+  bindWalkKey('Numpad7', NorthWest)
 
-    bindTurnKey('Ctrl+Up', North)
-    bindTurnKey('Ctrl+Right', East)
-    bindTurnKey('Ctrl+Down', South)
-    bindTurnKey('Ctrl+Left', West)
-    bindTurnKey('Ctrl+Numpad8', North)
-    bindTurnKey('Ctrl+Numpad6', East)
-    bindTurnKey('Ctrl+Numpad2', South)
-    bindTurnKey('Ctrl+Numpad4', West)
+  bindTurnKey('Ctrl+Up', North)
+  bindTurnKey('Ctrl+Right', East)
+  bindTurnKey('Ctrl+Down', South)
+  bindTurnKey('Ctrl+Left', West)
+  bindTurnKey('Ctrl+Numpad8', North)
+  bindTurnKey('Ctrl+Numpad6', East)
+  bindTurnKey('Ctrl+Numpad2', South)
+  bindTurnKey('Ctrl+Numpad4', West)
 
-    g_keyboard.bindKeyPress('Escape', function()
-        g_game.cancelAttackAndFollow()
-    end, gameRootPanel)
-    g_keyboard.bindKeyPress('Ctrl+=', function()
-        gameMapPanel:zoomIn()
-    end, gameRootPanel)
-    g_keyboard.bindKeyPress('Ctrl+-', function()
-        gameMapPanel:zoomOut()
-    end, gameRootPanel)
-    g_keyboard.bindKeyDown('Ctrl+Q', function()
-        tryLogout(false)
-    end, gameRootPanel)
-    g_keyboard.bindKeyDown('Ctrl+L', function()
-        tryLogout(false)
-    end, gameRootPanel)
-    g_keyboard.bindKeyDown('Alt+W', function()
-        g_map.cleanTexts()
-        modules.game_textmessage.clearMessages()
-    end, gameRootPanel)
-
-    g_keyboard.bindKeyDown('Ctrl+.', nextViewMode, gameRootPanel)
+  g_keyboard.bindKeyPress('Escape', function() g_game.cancelAttackAndFollow() end, gameRootPanel)
+  g_keyboard.bindKeyPress('Ctrl+=', function() if g_game.getFeature(GameNoDebug) then return end gameMapPanel:zoomIn() end, gameRootPanel)
+  g_keyboard.bindKeyPress('Ctrl+-', function() if g_game.getFeature(GameNoDebug) then return end gameMapPanel:zoomOut() end, gameRootPanel)
+  g_keyboard.bindKeyDown('Ctrl+Q', function() tryLogout(false) end, gameRootPanel)
+  g_keyboard.bindKeyDown('Ctrl+L', function() tryLogout(false) end, gameRootPanel)
+  g_keyboard.bindKeyDown('Ctrl+W', function() g_map.cleanTexts() modules.game_textmessage.clearMessages() end, gameRootPanel)
+  g_keyboard.bindKeyDown('Ctrl+.', nextViewMode, gameRootPanel)
 end
 
 function bindWalkKey(key, dir)
@@ -215,233 +203,195 @@ function unbindTurnKey(key)
 end
 
 function terminate()
-    StatsBar.terminate()
+  hide()
+  if g_app.hasUpdater() then
+      disconnect(g_app, {
+          onUpdateFinished = load,
+      })
+  else
+      disconnect(g_app, {
+          onRun = load,
+      })
+  end
+  disconnect(g_app, {
+      onExit = save,
+  })
 
-    hide()
-    if g_app.hasUpdater() then
-        disconnect(g_app, {
-            onUpdateFinished = load,
-        })
-    else
-        disconnect(g_app, {
-            onRun = load,
-        })
-    end
-    disconnect(g_app, {
-        onExit = save,
-    })
+  hookedMenuOptions = {}
+  markThing = nil
+  
 
-    hookedMenuOptions = {}
+  disconnect(g_game, {
+    onGameStart = onGameStart,
+    onGameEnd = onGameEnd,
+    onLoginAdvice = onLoginAdvice
+  })
 
-    stopSmartWalk()
+  disconnect(LocalPlayer, {
+		onUpdateAutoloot = onUpdateAutoloot
+	})
 
-    disconnect(g_game, {
-        onGameStart = onGameStart,
-        onGameEnd = onGameEnd,
-        onLoginAdvice = onLoginAdvice
-    })
+  disconnect(gameMapPanel, { onGeometryChange = updateSize })
+  connect(gameMapPanel, { onGeometryChange = updateSize, onVisibleDimensionChange = updateSize })
 
-    for k, v in pairs(panelsList) do
-        disconnect(v.checkbox, {
-            onCheckChange = onSelectPanel
-        })
-    end
-
-    logoutButton:destroy()
-    gameRootPanel:destroy()
+  logoutButton:destroy()
+  gameRootPanel:destroy()
 end
 
 function onGameStart()
-    show()
+  show()
+  
+  -- open tibia has delay in auto walking
+  if not g_game.isOfficialTibia() then
+    g_game.enableFeature(GameForceFirstAutoWalkStep)
+  else
+    g_game.disableFeature(GameForceFirstAutoWalkStep)
+  end
 
-    -- open tibia has delay in auto walking
-    if not g_game.isOfficialTibia() then
-        g_game.enableFeature(GameForceFirstAutoWalkStep)
-    else
-        g_game.disableFeature(GameForceFirstAutoWalkStep)
-    end
-
-    leftIncreaseSidePanels:setEnabled(not modules.client_options.getOption('showLeftExtraPanel'))
-    leftDecreaseSidePanels:setEnabled(modules.client_options.getOption('showLeftPanel'))
-    rightIncreaseSidePanels:setEnabled(not modules.client_options.getOption('showRightExtraPanel'))
-    rightDecreaseSidePanels:setEnabled(modules.client_options.getOption('showRightExtraPanel'))
+  leftIncreaseSidePanels:setEnabled(not modules.client_options.getOption('showLeftExtraPanel'))
+  leftDecreaseSidePanels:setEnabled(modules.client_options.getOption('showLeftPanel'))
+  rightIncreaseSidePanels:setEnabled(not modules.client_options.getOption('showRightExtraPanel'))
+  rightDecreaseSidePanels:setEnabled(modules.client_options.getOption('showRightExtraPanel'))
 end
 
 function onGameEnd()
-    hide()
+  hide()
+  modules.client_topmenu.getTopMenu():setImageColor('white')
 end
 
 function show()
-    connect(g_app, {
-        onClose = tryExit
-    })
-    modules.client_background.hide()
-    gameRootPanel:show()
-    gameRootPanel:focus()
-    gameMapPanel:followCreature(g_game.getLocalPlayer())
-
-    updateStretchShrink()
-    logoutButton:setTooltip(tr('Logout'))
-
-    setupViewMode(0)
-
-    addEvent(function()
-        if not limitedZoom or g_game.isGM() then
-            gameMapPanel:setMaxZoomOut(513)
-            gameMapPanel:setLimitVisibleRange(false)
-        else
-            gameMapPanel:setMaxZoomOut(11)
-            gameMapPanel:setLimitVisibleRange(true)
-        end
-    end)
+  connect(g_app, { onClose = tryExit })
+  modules.client_background.hide()
+  gameRootPanel:show()
+  gameRootPanel:focus()
+  gameMapPanel:followCreature(g_game.getLocalPlayer())
+    
+  updateStretchShrink()
+  logoutButton:setTooltip(tr('Logout'))
+  
+  addEvent(function()
+    if not limitedZoom or g_game.isGM() then
+      gameMapPanel:setMaxZoomOut(513)
+      gameMapPanel:setLimitVisibleRange(false)
+    else
+      gameMapPanel:setMaxZoomOut(15)
+      gameMapPanel:setLimitVisibleRange(true)
+    end
+  end)
 end
 
 function hide()
-    setupViewMode(0)
+  disconnect(g_app, { onClose = tryExit })
+  logoutButton:setTooltip(tr('Exit'))
 
-    disconnect(g_app, {
-        onClose = tryExit
-    })
-    logoutButton:setTooltip(tr('Exit'))
-
-    if logoutWindow then
-        logoutWindow:destroy()
-        logoutWindow = nil
-    end
-    if exitWindow then
-        exitWindow:destroy()
-        exitWindow = nil
-    end
-    if countWindow then
-        countWindow:destroy()
-        countWindow = nil
-    end
-    gameRootPanel:hide()
-    modules.client_background.show()
+  if logoutWindow then
+    logoutWindow:destroy()
+    logoutWindow = nil
+  end
+  if exitWindow then
+    exitWindow:destroy()
+    exitWindow = nil
+  end
+  if countWindow then
+    countWindow:destroy()
+    countWindow = nil
+  end
+  gameRootPanel:hide()
+  modules.client_background.show()
 end
 
 function save()
-    local settings = {}
-    settings.splitterMarginBottom = bottomSplitter:getMarginBottom()
-    g_settings.setNode('game_interface', settings)
+  local settings = {}
+  settings.splitterMarginBottom = bottomSplitter:getMarginBottom()
+  g_settings.setNode('game_interface', settings)
 end
 
 function load()
-    local settings = g_settings.getNode('game_interface')
-    if settings then
-        if settings.splitterMarginBottom then
-            bottomSplitter:setMarginBottom(settings.splitterMarginBottom)
-        end
+  local settings = g_settings.getNode('game_interface')
+  if settings then
+    if settings.splitterMarginBottom then
+      bottomSplitter:setMarginBottom(settings.splitterMarginBottom)
     end
+  end
 end
 
 function onLoginAdvice(message)
-    displayInfoBox(tr('For Your Information'), message)
+  displayInfoBox(tr('For Your Information'), message)
 end
 
 function forceExit()
-    g_game.cancelLogin()
-    scheduleEvent(exit, 10)
-    return true
+  g_game.cancelLogin()
+  scheduleEvent(exit, 10)
+  return true
 end
 
 function tryExit()
-    if exitWindow then
-        return true
-    end
-
-    local exitFunc = function()
-        g_game.safeLogout()
-        forceExit()
-    end
-    local logoutFunc = function()
-        g_game.safeLogout()
-        exitWindow:destroy()
-        exitWindow = nil
-    end
-    local cancelFunc = function()
-        exitWindow:destroy()
-        exitWindow = nil
-    end
-
-    exitWindow = displayGeneralBox(tr('Exit'), tr(
-            'If you shut down the program, your character might stay in the game.\nClick on \'Logout\' to ensure that you character leaves the game properly.\nClick on \'Exit\' if you want to exit the program without logging out your character.'),
-        {
-            {
-                text = tr('Cancel'),
-                callback = cancelFunc
-            },
-            {
-                text = tr('Logout'),
-                callback = logoutFunc
-            },
-            {
-                text = tr('Force Exit'),
-                callback = exitFunc
-            },
-            anchor = AnchorHorizontalCenter
-        }, logoutFunc, cancelFunc)
-
+  if exitWindow then
     return true
+  end
+
+  local exitFunc = function() scheduleEvent(exit, 10) end
+  local logoutFunc = function() g_game.safeLogout() exitWindow:destroy() exitWindow = nil end
+  local cancelFunc = function() exitWindow:destroy() exitWindow = nil end
+
+  exitWindow = displayGeneralBox(tr('Exit'), tr("If you shut down the program, your character might stay in the game.\nClick on 'Logout' to ensure that you character leaves the game properly.\nClick on 'Exit' if you want to exit the program without logging out your character."),
+  { { text=tr('Force Exit'), callback=exitFunc },
+    { text=tr('Logout'), callback=logoutFunc },
+    { text=tr('Cancel'), callback=cancelFunc },
+    anchor=AnchorHorizontalCenter }, logoutFunc, cancelFunc)
+
+  return true
 end
 
 function tryLogout(prompt)
-    if type(prompt) ~= 'boolean' then
-        prompt = true
-    end
-    if not g_game.isOnline() then
-        exit()
-        return
-    end
+  if type(prompt) ~= 'boolean' then
+    prompt = true
+  end
+  if not g_game.isOnline() then
+    exit()
+    return
+  end
 
-    if logoutWindow then
-        return
-    end
+  if logoutWindow then
+    return
+  end
 
-    local msg, yesCallback
-    if not g_game.isConnectionOk() then
-        msg =
-        'Your connection is failing, if you logout now your character will be still online, do you want to force logout?'
+  local msg, yesCallback
+  if not g_game.isConnectionOk() then
+    msg = 'Your connection is failing, if you logout now your character will be still online, do you want to force logout?'
 
-        yesCallback = function()
-            g_game.forceLogout()
-            if logoutWindow then
-                logoutWindow:destroy()
-                logoutWindow = nil
-            end
-        end
-    else
-        msg = 'Are you sure you want to logout?'
-
-        yesCallback = function()
-            g_game.safeLogout()
-            if logoutWindow then
-                logoutWindow:destroy()
-                logoutWindow = nil
-            end
-        end
-    end
-
-    local noCallback = function()
+    yesCallback = function()
+      g_game.forceLogout()
+      if logoutWindow then
         logoutWindow:destroy()
         logoutWindow = nil
+      end
     end
+  else
+    msg = 'Are you sure you want to logout?'
 
-    if prompt then
-        logoutWindow = displayGeneralBox(tr('Logout'), tr(msg), {
-            {
-                text = tr('No'),
-                callback = noCallback
-            },
-            {
-                text = tr('Yes'),
-                callback = yesCallback
-            },
-            anchor = AnchorHorizontalCenter
-        }, yesCallback, noCallback)
-    else
-        yesCallback()
+    yesCallback = function()
+      g_game.safeLogout()
+      if logoutWindow then
+        logoutWindow:destroy()
+        logoutWindow = nil
+      end
     end
+  end
+
+  local noCallback = function()
+    logoutWindow:destroy()
+    logoutWindow = nil
+  end
+
+  if prompt then
+    logoutWindow = displayGeneralBox(tr('Logout'), tr(msg), {
+      { text=tr('Yes'), callback=yesCallback },
+      { text=tr('No'), callback=noCallback },
+      anchor=AnchorHorizontalCenter}, yesCallback, noCallback)
+  else
+     yesCallback()
+  end
 end
 
 function stopSmartWalk()
@@ -504,381 +454,310 @@ function smartWalk(dir)
 end
 
 function updateStretchShrink()
-    if modules.client_options.getOption('dontStretchShrink') and not alternativeView then
-        gameMapPanel:setVisibleDimension({
-            width = 15,
-            height = 11
-        })
+  if modules.client_options.getOption('dontStretchShrink') and not alternativeView then
+    gameMapPanel:setVisibleDimension({ width = 15, height = 11 })
 
-        -- Set gameMapPanel size to height = 11 * 32 + 2
-        bottomSplitter:setMarginBottom(bottomSplitter:getMarginBottom() + (gameMapPanel:getHeight() - 32 * 11) - 10)
-    end
+    -- Set gameMapPanel size to height = 11 * 32 + 2
+    bottomSplitter:setMarginBottom(bottomSplitter:getMarginBottom() + (gameMapPanel:getHeight() - 32 * 11) - 10)
+  end
 end
 
 function onMouseGrabberRelease(self, mousePosition, mouseButton)
-    if selectedThing == nil then
-        return false
+  if selectedThing == nil then return false end
+  if mouseButton == MouseLeftButton then
+    local clickedWidget = gameRootPanel:recursiveGetChildByPos(mousePosition, false)
+    if clickedWidget then
+      if selectedType == 'use' then
+        onUseWith(clickedWidget, mousePosition)
+      elseif selectedType == 'trade' then
+        onTradeWith(clickedWidget, mousePosition)
+      end
     end
-    if mouseButton == MouseLeftButton then
-        local clickedWidget = gameRootPanel:recursiveGetChildByPos(mousePosition, false)
-        if clickedWidget then
-            if selectedType == 'use' then
-                onUseWith(clickedWidget, mousePosition)
-            elseif selectedType == 'trade' then
-                onTradeWith(clickedWidget, mousePosition)
-            end
-        end
-    end
+  end
 
-    selectedThing = nil
-    g_mouse.popCursor('target')
-    self:ungrabMouse()
-    return true
+  selectedThing = nil
+  g_mouse.popCursor('target')
+  self:ungrabMouse()
+  return true
 end
 
 function onUseWith(clickedWidget, mousePosition)
-    if clickedWidget:getClassName() == 'UIGameMap' then
-        local tile = clickedWidget:getTile(mousePosition)
-        if tile then
-            if selectedThing:isFluidContainer() or selectedThing:isMultiUse() then
-                g_game.useWith(selectedThing, tile:getTopMultiUseThing())
-            else
-                g_game.useWith(selectedThing, tile:getTopUseThing())
-            end
-        end
-    elseif clickedWidget:getClassName() == 'UIItem' and not clickedWidget:isVirtual() then
-        g_game.useWith(selectedThing, clickedWidget:getItem())
-    elseif clickedWidget:getClassName() == 'UICreatureButton' then
-        local creature = clickedWidget:getCreature()
-        if creature then
-            g_game.useWith(selectedThing, creature)
-        end
-    end
+  if clickedWidget:getClassName() == 'UIGameMap' then
+      local tile = clickedWidget:getTile(mousePosition)
+      if tile then
+          if selectedThing:isFluidContainer() or selectedThing:isMultiUse() then
+              g_game.useWith(selectedThing, tile:getTopMultiUseThing())
+          else
+              g_game.useWith(selectedThing, tile:getTopUseThing())
+          end
+      end
+  elseif clickedWidget:getClassName() == 'UIItem' and not clickedWidget:isVirtual() then
+      g_game.useWith(selectedThing, clickedWidget:getItem())
+  elseif clickedWidget:getClassName() == 'UICreatureButton' then
+      local creature = clickedWidget:getCreature()
+      if creature then
+          g_game.useWith(selectedThing, creature)
+      end
+  end
 end
 
 function onTradeWith(clickedWidget, mousePosition)
-    if clickedWidget:getClassName() == 'UIGameMap' then
-        local tile = clickedWidget:getTile(mousePosition)
-        if tile then
-            g_game.requestTrade(selectedThing, tile:getTopCreature())
-        end
-    elseif clickedWidget:getClassName() == 'UICreatureButton' then
-        local creature = clickedWidget:getCreature()
-        if creature then
-            g_game.requestTrade(selectedThing, creature)
-        end
+  if clickedWidget:getClassName() == 'UIGameMap' then
+    local tile = clickedWidget:getTile(mousePosition)
+    if tile then
+      g_game.requestTrade(selectedThing, tile:getTopCreature())
     end
+  elseif clickedWidget:getClassName() == 'UICreatureButton' then
+    local creature = clickedWidget:getCreature()
+    if creature then
+      g_game.requestTrade(selectedThing, creature)
+    end
+  end
 end
 
-function startUseWith(thing)
-    if not thing then
-        return
+function startUseWith(thing, subType)
+  if not thing then return end
+  if g_ui.isMouseGrabbed() then
+    if selectedThing then
+      selectedThing = thing
+      selectedType = 'use'
     end
-    if g_ui.isMouseGrabbed() then
-        if selectedThing then
-            selectedThing = thing
-            selectedType = 'use'
-        end
-        return
-    end
-    selectedType = 'use'
-    selectedThing = thing
-    mouseGrabberWidget:grabMouse()
-    g_mouse.pushCursor('target')
+    return
+  end
+  selectedType = 'use'
+  selectedThing = thing
+  mouseGrabberWidget:grabMouse()
+  g_mouse.pushCursor('target')
 end
 
 function startTradeWith(thing)
-    if not thing then
-        return
+  if not thing then return end
+  if g_ui.isMouseGrabbed() then
+    if selectedThing then
+      selectedThing = thing
+      selectedType = 'trade'
     end
-    if g_ui.isMouseGrabbed() then
-        if selectedThing then
-            selectedThing = thing
-            selectedType = 'trade'
-        end
-        return
-    end
-    selectedType = 'trade'
-    selectedThing = thing
-    mouseGrabberWidget:grabMouse()
-    g_mouse.pushCursor('target')
+    return
+  end
+  selectedType = 'trade'
+  selectedThing = thing
+  mouseGrabberWidget:grabMouse()
+  g_mouse.pushCursor('target')
 end
 
 function isMenuHookCategoryEmpty(category)
-    if category then
-        for _, opt in pairs(category) do
-            if opt then
-                return false
-            end
-        end
-    end
-    return true
+  if category then
+      for _, opt in pairs(category) do
+          if opt then
+              return false
+          end
+      end
+  end
+  return true
 end
 
 function addMenuHook(category, name, callback, condition, shortcut)
-    if not hookedMenuOptions[category] then
-        hookedMenuOptions[category] = {}
-    end
-    hookedMenuOptions[category][name] = {
-        callback = callback,
-        condition = condition,
-        shortcut = shortcut
-    }
+  if not hookedMenuOptions[category] then
+    hookedMenuOptions[category] = {}
+  end
+  hookedMenuOptions[category][name] = {
+    callback = callback,
+    condition = condition,
+    shortcut = shortcut
+  }
 end
 
 function removeMenuHook(category, name)
-    if not name then
-        hookedMenuOptions[category] = {}
-    else
-        hookedMenuOptions[category][name] = nil
-    end
+  if not name then
+    hookedMenuOptions[category] = {}
+  else
+    hookedMenuOptions[category][name] = nil
+  end
 end
 
 function createThingMenu(menuPosition, lookThing, useThing, creatureThing)
-    if not g_game.isOnline() then
-        return
-    end
+  if not g_game.isOnline() then return end
 
-    local menu = g_ui.createWidget('PopupMenu')
-    menu:setGameMenu(true)
+  local menu = g_ui.createWidget('PopupMenu')
+  menu:setGameMenu(true)
 
-    local classic = modules.client_options.getOption('classicControl')
-    local shortcut = nil
+  local classic = modules.client_options.getOption('classicControl')
+  local shortcut = nil
 
-    if not classic then
-        shortcut = '(Shift)'
-    else
-        shortcut = nil
-    end
-    if lookThing then
-        menu:addOption(tr('Look'), function()
-            g_game.look(lookThing)
-        end, shortcut)
-    end
-
-    if not classic then
-        shortcut = '(Ctrl)'
-    else
-        shortcut = nil
-    end
-    if useThing then
-        if useThing:isContainer() then
-            if useThing:getParentContainer() then
-                menu:addOption(tr('Open'), function()
-                    g_game.open(useThing, useThing:getParentContainer())
-                end, shortcut)
-                menu:addOption(tr('Open in new window'), function()
-                    g_game.open(useThing)
-                end)
-            else
-                menu:addOption(tr('Open'), function()
-                    g_game.open(useThing)
-                end, shortcut)
-            end
+  if not classic then shortcut = '(Shift)' else shortcut = nil end
+  if lookThing then
+    menu:addOption(tr('Look'), function() g_game.look(lookThing) end, shortcut)
+  end
+  local localPlayer = g_game.getLocalPlayer()
+  if not classic then shortcut = '(Ctrl)' else shortcut = nil end
+  if useThing then
+    if useThing:isContainer() then
+      if useThing:getParentContainer() then
+        menu:addOption(tr('Open'), function() g_game.open(useThing, useThing:getParentContainer()) end, shortcut)
+        menu:addOption(tr('Open in new window'), function() g_game.open(useThing) end)
+      else
+        menu:addOption(tr('Open'), function() g_game.open(useThing) end, shortcut)
+      end
+      if not useThing:isNotMoveable() and useThing:isPickupable() then
+        if useThing:getLootCategory() ~= 0 then
+          menu:addSeparator()
+          menu:addOption(tr('Remove loot category'), function() modules.game_containers.onRemoveLootCategory(useThing) end, shortcut, "#ff0000")
+          menu:addOption(tr('Edit loot category'), function() modules.game_containers.onLootCategory(useThing) end, shortcut, "#ffae00")
+          menu:addOption(tr('Pass loot category'), function() g_game.addLootCategory(useThing, LOOT_CATEGORY_COPY) end, shortcut, "#AAFF00")
         else
-            if useThing:isMultiUse() then
-                menu:addOption(tr('Use with ...'), function()
-                    startUseWith(useThing)
-                end, shortcut)
-            else
-                menu:addOption(tr('Use'), function()
-                    g_game.use(useThing)
-                end, shortcut)
-            end
+          menu:addOption(tr('Add loots category'), function() modules.game_containers.onLootCategory(useThing) end, shortcut, "#fbff00")
         end
-
-        if useThing:isRotateable() then
-            menu:addOption(tr('Rotate'), function()
-                g_game.rotate(useThing)
-            end)
-        end
-
-        local onWrapItem = function()
-            g_game.wrap(useThing)
-        end
-        if useThing:isWrapable() then
-            menu:addOption(tr('Wrap'), onWrapItem)
-        end
-        if useThing:isUnwrapable() then
-            menu:addOption(tr('Unwrap'), onWrapItem)
-        end
-
-        if g_game.getFeature(GameBrowseField) and useThing:getPosition().x ~= 0xffff then
-            menu:addOption(tr('Browse Field'), function()
-                g_game.browseField(useThing:getPosition())
-            end)
-        end
+      end
+    else
+      if useThing:isMultiUse() then
+        menu:addOption(tr('Use with ...'), function() startUseWith(useThing) end, shortcut)
+      else
+        menu:addOption(tr('Use'), function() g_game.use(useThing) end, shortcut)
+      end
+    end
+    if useThing:isPickupable() then
+      menu:addSeparator()
+      menu:addOption(tr('Open auto loot list'), function() openAutolootWindow() end, shortcut, "#00fffb")
+      if localPlayer:isInAutoLootList(useThing:getId()) then
+        menu:addOption(tr('Remove from auto loot list'), function() localPlayer:removeAutoLoot(useThing:getId()) end, shortcut, "#ff0000")
+      else
+        menu:addOption(tr('Add to auto loot list'), function() localPlayer:addAutoLoot(useThing:getId()) end, shortcut, "#22ff00")
+      end
+    end
+    
+    if useThing:isRotateable() then
+        menu:addOption(tr('Rotate'), function()
+            g_game.rotate(useThing)
+        end)
+    end
+    local onWrapItem = function()
+        g_game.wrap(useThing)
+    end
+    if useThing:isWrapable() then
+        menu:addOption(tr('Wrap'), onWrapItem)
+    end
+    if useThing:isUnwrapable() then
+        menu:addOption(tr('Unwrap'), onWrapItem)
     end
 
-    if lookThing and not lookThing:isCreature() and not lookThing:isNotMoveable() and lookThing:isPickupable() then
-        menu:addSeparator()
-        menu:addOption(tr('Trade with ...'), function()
-            startTradeWith(lookThing)
+    if g_game.getFeature(GameBrowseField) and useThing:getPosition().x ~= 0xffff then
+      menu:addOption(tr('Browse Field'), function() g_game.browseField(useThing:getPosition()) end)
+    end
+  end
+
+  if lookThing and not lookThing:isCreature() and not lookThing:isNotMoveable() and lookThing:isPickupable() then
+    menu:addSeparator()
+    menu:addOption(tr('Trade with ...'), function() startTradeWith(lookThing) end)
+  end
+
+  if lookThing then
+    local parentContainer = lookThing:getParentContainer()
+    if parentContainer and parentContainer:hasParent() then
+      menu:addOption(tr('Move up'), function() g_game.moveToParentContainer(lookThing, lookThing:getCount()) end)
+    end
+  end
+
+  if creatureThing then
+    local localPlayer = g_game.getLocalPlayer()
+    menu:addSeparator()
+
+    if creatureThing:isLocalPlayer() then
+      menu:addOption(tr('Set Outfit'), function() g_game.requestOutfit() end)
+
+      if g_game.getFeature(GamePrey) then
+        menu:addOption(tr('Prey Dialog'), function()
+            modules.game_prey.show()
         end)
     end
 
-    if lookThing then
-        local parentContainer = lookThing:getParentContainer()
-        if parentContainer and parentContainer:hasParent() then
-            menu:addOption(tr('Move up'), function()
-                g_game.moveToParentContainer(lookThing, lookThing:getCount())
-            end)
-        end
-    end
-
-    if creatureThing then
-        local localPlayer = g_game.getLocalPlayer()
-        menu:addSeparator()
-
-        if creatureThing:isLocalPlayer() then
-            menu:addOption(tr(g_game.getClientVersion() >= 1000 and "Customise Character" or "Set Outfit"), function()
-                g_game.requestOutfit()
-            end)
-
-            if g_game.getFeature(GamePrey) then
-                menu:addOption(tr('Prey Dialog'), function()
-                    modules.game_prey.show()
-                end)
-            end
-
-            if g_game.getFeature(GamePlayerMounts) then
-                if not localPlayer:isMounted() then
-                    menu:addOption(tr('Mount'), function()
-                        localPlayer:mount()
-                    end)
-                else
-                    menu:addOption(tr('Dismount'), function()
-                        localPlayer:dismount()
-                    end)
-                end
-            end
-
-            if creatureThing:isPartyMember() then
-                if creatureThing:isPartyLeader() then
-                    if creatureThing:isPartySharedExperienceActive() then
-                        menu:addOption(tr('Disable Shared Experience'), function()
-                            g_game.partyShareExperience(false)
-                        end)
-                    else
-                        menu:addOption(tr('Enable Shared Experience'), function()
-                            g_game.partyShareExperience(true)
-                        end)
-                    end
-                end
-                menu:addOption(tr('Leave Party'), function()
-                    g_game.partyLeave()
-                end)
-            end
+      if g_game.getFeature(GamePlayerMounts) then
+        if not localPlayer:isMounted() then
+          menu:addOption(tr('Mount'), function() localPlayer:mount() end)
         else
-            local localPosition = localPlayer:getPosition()
-            if not classic then
-                shortcut = '(Alt)'
-            else
-                shortcut = nil
-            end
-            if creatureThing:getPosition().z == localPosition.z then
-                if g_game.getAttackingCreature() ~= creatureThing then
-                    menu:addOption(tr('Attack'), function()
-                        g_game.attack(creatureThing)
-                    end, shortcut)
-                else
-                    menu:addOption(tr('Stop Attack'), function()
-                        g_game.cancelAttack()
-                    end, shortcut)
-                end
+          menu:addOption(tr('Dismount'), function() localPlayer:dismount() end)
+        end
+      end
+      
+      
+      if creatureThing:isPartyMember() then
+        if creatureThing:isPartyLeader() then
+          if creatureThing:isPartySharedExperienceActive() then
+            menu:addOption(tr('Disable Shared Experience'), function() g_game.partyShareExperience(false) end)
+          else
+            menu:addOption(tr('Enable Shared Experience'), function() g_game.partyShareExperience(true) end)
+          end
+        end
+        menu:addOption(tr('Leave Party'), function() g_game.partyLeave() end)
+      end
 
-                if g_game.getFollowingCreature() ~= creatureThing then
-                    menu:addOption(tr('Follow'), function()
-                        g_game.follow(creatureThing)
-                    end)
-                else
-                    menu:addOption(tr('Stop Follow'), function()
-                        g_game.cancelFollow()
-                    end)
-                end
-            end
-
-            if creatureThing:isPlayer() then
-                menu:addSeparator()
-                local creatureName = creatureThing:getName()
-                menu:addOption(tr('Message to %s', creatureName), function()
-                    g_game.openPrivateChannel(creatureName)
-                end)
-                if modules.game_console.getOwnPrivateTab() then
-                    menu:addOption(tr('Invite to private chat'), function()
-                        g_game.inviteToOwnChannel(creatureName)
-                    end)
-                    menu:addOption(tr('Exclude from private chat'), function()
-                        g_game.excludeFromOwnChannel(creatureName)
-                    end) -- [TODO] must be removed after message's popup labels been implemented
-                end
-                if not localPlayer:hasVip(creatureName) then
-                    menu:addOption(tr('Add to VIP list'), function()
-                        g_game.addVip(creatureName)
-                    end)
-                end
-
-                if modules.game_console.isIgnored(creatureName) then
-                    menu:addOption(tr('Unignore') .. ' ' .. creatureName, function()
-                        modules.game_console.removeIgnoredPlayer(creatureName)
-                    end)
-                else
-                    menu:addOption(tr('Ignore') .. ' ' .. creatureName, function()
-                        modules.game_console.addIgnoredPlayer(creatureName)
-                    end)
-                end
-
-                local localPlayerShield = localPlayer:getShield()
-                local creatureShield = creatureThing:getShield()
-
-                if localPlayerShield == ShieldNone or localPlayerShield == ShieldWhiteBlue then
-                    if creatureShield == ShieldWhiteYellow then
-                        menu:addOption(tr('Join %s\'s Party', creatureThing:getName()), function()
-                            g_game.partyJoin(creatureThing:getId())
-                        end)
-                    else
-                        menu:addOption(tr('Invite to Party'), function()
-                            g_game.partyInvite(creatureThing:getId())
-                        end)
-                    end
-                elseif localPlayerShield == ShieldWhiteYellow then
-                    if creatureShield == ShieldWhiteBlue then
-                        menu:addOption(tr('Revoke %s\'s Invitation', creatureThing:getName()), function()
-                            g_game.partyRevokeInvitation(creatureThing:getId())
-                        end)
-                    end
-                elseif localPlayerShield == ShieldYellow or localPlayerShield == ShieldYellowSharedExp or
-                    localPlayerShield == ShieldYellowNoSharedExpBlink or localPlayerShield == ShieldYellowNoSharedExp then
-                    if creatureShield == ShieldWhiteBlue then
-                        menu:addOption(tr('Revoke %s\'s Invitation', creatureThing:getName()), function()
-                            g_game.partyRevokeInvitation(creatureThing:getId())
-                        end)
-                    elseif creatureShield == ShieldBlue or creatureShield == ShieldBlueSharedExp or creatureShield ==
-                        ShieldBlueNoSharedExpBlink or creatureShield == ShieldBlueNoSharedExp then
-                        menu:addOption(tr('Pass Leadership to %s', creatureThing:getName()), function()
-                            g_game.partyPassLeadership(creatureThing:getId())
-                        end)
-                    else
-                        menu:addOption(tr('Invite to Party'), function()
-                            g_game.partyInvite(creatureThing:getId())
-                        end)
-                    end
-                end
-            end
+    else
+      local localPosition = localPlayer:getPosition()
+      if not classic then shortcut = '(Alt)' else shortcut = nil end
+      if creatureThing:getPosition().z == localPosition.z then
+        if g_game.getAttackingCreature() ~= creatureThing then
+          menu:addOption(tr('Attack'), function() g_game.attack(creatureThing) end, shortcut)
+        else
+          menu:addOption(tr('Stop Attack'), function() g_game.cancelAttack() end, shortcut)
         end
 
-        if modules.game_ruleviolation.hasWindowAccess() and creatureThing:isPlayer() then
-            menu:addSeparator()
-            menu:addOption(tr('Rule Violation'), function()
-                modules.game_ruleviolation.show(creatureThing:getName())
-            end)
+        if g_game.getFollowingCreature() ~= creatureThing then
+          menu:addOption(tr('Follow'), function() g_game.follow(creatureThing) end)
+        else
+          menu:addOption(tr('Stop Follow'), function() g_game.cancelFollow() end)
         end
+      end
 
+      if creatureThing:isPlayer() then
         menu:addSeparator()
-        menu:addOption(tr('Copy Name'), function()
-            g_window.setClipboardText(creatureThing:getName())
-        end)
+        local creatureName = creatureThing:getName()
+        menu:addOption(tr('Message to %s', creatureName), function() g_game.openPrivateChannel(creatureName) end)
+        if modules.game_console.getOwnPrivateTab() then
+          menu:addOption(tr('Invite to private chat'), function() g_game.inviteToOwnChannel(creatureName) end)
+          menu:addOption(tr('Exclude from private chat'), function() g_game.excludeFromOwnChannel(creatureName) end) -- [TODO] must be removed after message's popup labels been implemented
+        end
+        if not localPlayer:hasVip(creatureName) then
+          menu:addOption(tr('Add to VIP list'), function() g_game.addVip(creatureName) end)
+        end
+
+        if modules.game_console.isIgnored(creatureName) then
+          menu:addOption(tr('Unignore') .. ' ' .. creatureName, function() modules.game_console.removeIgnoredPlayer(creatureName) end)
+        else
+          menu:addOption(tr('Ignore') .. ' ' .. creatureName, function() modules.game_console.addIgnoredPlayer(creatureName) end)
+        end
+
+        local localPlayerShield = localPlayer:getShield()
+        local creatureShield = creatureThing:getShield()
+
+        if localPlayerShield == ShieldNone or localPlayerShield == ShieldWhiteBlue then
+          if creatureShield == ShieldWhiteYellow then
+            menu:addOption(tr('Join %s\'s Party', creatureThing:getName()), function() g_game.partyJoin(creatureThing:getId()) end)
+          else
+            menu:addOption(tr('Invite to Party'), function() g_game.partyInvite(creatureThing:getId()) end)
+          end
+        elseif localPlayerShield == ShieldWhiteYellow then
+          if creatureShield == ShieldWhiteBlue then
+            menu:addOption(tr('Revoke %s\'s Invitation', creatureThing:getName()), function() g_game.partyRevokeInvitation(creatureThing:getId()) end)
+          end
+        elseif localPlayerShield == ShieldYellow or localPlayerShield == ShieldYellowSharedExp or localPlayerShield == ShieldYellowNoSharedExpBlink or localPlayerShield == ShieldYellowNoSharedExp then
+          if creatureShield == ShieldWhiteBlue then
+            menu:addOption(tr('Revoke %s\'s Invitation', creatureThing:getName()), function() g_game.partyRevokeInvitation(creatureThing:getId()) end)
+          elseif creatureShield == ShieldBlue or creatureShield == ShieldBlueSharedExp or creatureShield == ShieldBlueNoSharedExpBlink or creatureShield == ShieldBlueNoSharedExp then
+            menu:addOption(tr('Pass Leadership to %s', creatureThing:getName()), function() g_game.partyPassLeadership(creatureThing:getId()) end)
+          else
+            menu:addOption(tr('Invite to Party'), function() g_game.partyInvite(creatureThing:getId()) end)
+          end
+        end
+      end
     end
+
+    if modules.game_ruleviolation.hasWindowAccess() and creatureThing:isPlayer() then
+      menu:addSeparator()
+      menu:addOption(tr('Rule Violation'), function() modules.game_ruleviolation.show(creatureThing:getName()) end)
+    end
+
+    menu:addSeparator()
+    menu:addOption(tr('Copy Name'), function() g_window.setClipboardText(creatureThing:getName()) end)
+  end
 
     -- hooked menu options
     for _, category in pairs(hookedMenuOptions) do
@@ -904,26 +783,7 @@ function createThingMenu(menuPosition, lookThing, useThing, creatureThing)
         end
     end
 
-    if g_game.getFeature(GameThingQuickLoot) and modules.game_quickloot and lookThing and not lookThing:isCreature() and lookThing:isPickupable() then
-        local quickLoot = modules.game_quickloot.QuickLoot
-        menu.addSeparator(menu)
-
-        if lookThing:isContainer() then
-            menu.addOption(menu, tr("Manage Loot Containers"), function()
-                quickLoot.toggle()
-            end)
-        end
-
-        local lootExists = quickLoot.lootExists(lookThing:getId())
-        local optionText = lootExists and "Remove from" or "Add to"
-        local actionFunction = lootExists and quickLoot.removeLootList or quickLoot.addLootList
-
-        menu.addOption(menu, tr(optionText .. " loot list"), function()
-            actionFunction(lookThing:getId())
-        end)
-    end
-
-    menu:display(menuPosition)
+  menu:display(menuPosition)
 end
 
 function processMouseAction(menuPosition, mouseButton, autoWalkPos, lookThing, useThing, creatureThing, attackCreature)
@@ -1165,6 +1025,18 @@ function getLeftPanel()
     return gameLeftPanel
 end
 
+function getContainerPanel()
+  local containerPanel = g_settings.getNumber("containerPanel")
+  if containerPanel >= 5 then
+    containerPanel = containerPanel - 4
+    return gameRightPanel:getChildByIndex(math.min(containerPanel, gameRightPanel:getChildCount()))
+  end
+  if gameLeftPanel:getChildCount() == 0 then
+    return getRightPanel()
+  end
+  return gameLeftPanel:getChildByIndex(math.min(containerPanel, gameLeftPanel:getChildCount()))
+end
+
 function getRightExtraPanel()
     return gameRightExtraPanel
 end
@@ -1377,4 +1249,117 @@ function checkAndOpenLeftPanel()
         modules.client_options.setOption('showLeftPanel', true)
         return
     end
+end
+
+function updateTextEdit(self)
+  autolootAcceptButton:setEnabled(self:getText() ~= "")
+end
+
+function updateSearchEdit(self)
+  if not autolootItemsList then
+    return true
+  end
+
+  local text = self:getText()
+  for _, widget in pairs(autolootItemsList:getChildren()) do
+    if string.find(widget.name:lower(), text:lower()) then
+      widget:show()
+    else
+      widget:hide()
+    end
+  end
+end
+
+function clearSearchEdit()
+  if not autolootWindow then
+    return true
+  end
+
+  autolootWindow:getChildById("textSearch"):clearText()
+end
+
+function onUpdateAutoloot(self, id, name, remove)
+  if not autolootItemsList then
+    return true
+  end
+
+  if remove then
+    local widget = autolootItemsList:getChildById(id)
+    if widget then
+      widget:destroy()
+    end
+  else
+    local widget = g_ui.createWidget("AutolootItem", autolootItemsList)
+    widget.name = name
+    widget:setId(id)
+    widget:getChildById("item"):setItemId(id)
+    widget:getChildById("name"):setText(name)
+  end
+  autolootTextEdit:clearText()
+end
+
+function closeAutolootWindow()
+  if not autolootWindow then
+    return true
+  end
+
+  autolootWindow:destroy()
+  autolootWindow = nil
+  autolootItemsList = nil
+  autolootAcceptButton = nil
+  autolootTextEdit = nil
+end
+
+function openAutolootWindow(clientId)
+  if  autolootWindow then
+    return true
+  end
+
+  autolootWindow = g_ui.displayUI('auto_loot_window')
+  autolootWindow.clientId = clientId
+  autolootItemsList = autolootWindow:getChildById('itemsList')
+  autolootAcceptButton = autolootWindow:getChildById('button')
+  autolootTextEdit = autolootWindow:getChildById('textEdit')
+  autolootTextEdit:setText(clientId)
+
+  if not autolootWindow or not autolootAcceptButton then
+    print("Autoloot UI failed to load.")
+    return
+  end
+
+  local localPlayer = g_game.getLocalPlayer()
+  local items = localPlayer:getAutolootItems()
+  for id, name in pairs(items) do
+    onUpdateAutoloot(localPlayer, id, name, false)
+  end
+end
+
+function removeFromAutolootList(self)
+  local localPlayer = g_game.getLocalPlayer()
+  localPlayer:removeAutoLoot(tonumber(self:getId()), "")
+end
+
+function addToAutolootList()
+  print(1)
+  if not autolootWindow then
+    return true
+  end
+
+  print(2)
+  local localPlayer = g_game.getLocalPlayer()
+  local text = autolootTextEdit:getText():trim()
+  if text == "" then
+    displayErrorMessage("Invalid loot category.")
+    return
+  end
+
+  if tonumber(text) then
+    -- Send clientId
+    localPlayer:addAutoLoot(tonumber(text), "")
+    print(3)
+  else
+    -- Send name
+    localPlayer:addAutoLoot(0, text)
+    print(4)
+  end
 end
