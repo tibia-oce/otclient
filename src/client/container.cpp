@@ -87,8 +87,7 @@ void Container::onUpdateItem(int slot, const ItemPtr& item, uint16_t categoryId)
     }
 
     item->setLootCategory(categoryId);
-
-    ItemPtr oldItem = m_items[slot];
+    const auto& oldItem = m_items[slot];
     m_items[slot] = item;
     item->setPosition(getSlotPosition(slot));
 

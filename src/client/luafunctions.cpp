@@ -729,7 +729,6 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<Item>("clearContainerItems", &Item::clearContainerItems);
     g_lua.bindClassMemberFunction<Item>("getContainerItem", &Item::getContainerItem);
 
-    g_lua.bindClassMemberFunction<Item>("getLootCategory", &Item::getLootCategory);
 
     g_lua.bindClassMemberFunction<Item>("getDescription", &Item::getDescription);
     g_lua.bindClassMemberFunction<Item>("getText", &Item::getText);
@@ -743,6 +742,7 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<Item>("setTeleportDestination", &Item::setTeleportDestination);
 #endif
 
+    g_lua.bindClassMemberFunction<Item>("getLootCategory", &Item::getLootCategory);
     g_lua.registerClass<Effect, Thing>();
     g_lua.bindClassStaticFunction<Effect>("create", [] { return std::make_shared<Effect>(); });
     g_lua.bindClassMemberFunction<Effect>("setId", &Effect::setId);

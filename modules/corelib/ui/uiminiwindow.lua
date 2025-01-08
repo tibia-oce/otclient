@@ -85,7 +85,7 @@ function UIMiniWindow:setup()
             self:minimize()
         end
     end
-
+    
     self:getChildById('lockButton').onClick = function()
 
         if self:isDraggable() then
@@ -94,7 +94,7 @@ function UIMiniWindow:setup()
             self:unlock()
         end
     end
-
+  
     self:getChildById('miniwindowTopBar').onDoubleClick = function()
         if self:isOn() then
             self:maximize()
@@ -102,8 +102,76 @@ function UIMiniWindow:setup()
             self:minimize()
         end
     end
-end
 
+    self:getChildById('bottomResizeBorder').onDoubleClick = function()
+      local resizeBorder = self:getChildById('bottomResizeBorder')
+      self:setHeight(resizeBorder:getMinimum())
+    end
+  
+    local oldParent = self:getParent()
+  
+  
+    local settings = {}
+    if g_settings.getNodeSize('MiniWindows') < 50 then
+      settings = g_settings.getNode('MiniWindows')
+    end
+  
+    if settings then
+      local selfSettings = settings[self:getId()]
+      if selfSettings then
+        if selfSettings.parentId then
+          local parent = rootWidget:recursiveGetChildById(selfSettings.parentId)
+          if parent then
+            if parent:getClassName() == 'UIMiniWindowContainer' and selfSettings.index and parent:isOn() then
+              self:setParent(parent, true)
+              self.miniIndex = selfSettings.index
+              parent:scheduleInsert(self, selfSettings.index)
+            elseif selfSettings.position then
+              self:setParent(parent, true)
+              self:setPosition(topoint(selfSettings.position))
+            end
+          end
+        end
+  
+        if selfSettings.minimized then
+          self:minimize(true)
+        else
+          if selfSettings.height and self:isResizeable() then
+            self:setHeight(selfSettings.height)
+          elseif selfSettings.height and not self:isResizeable() then
+            self:eraseSettings({height = true})
+          end
+        end
+        if selfSettings.closed and not self.forceOpen and not self.containerWindow then
+          self:close(true)
+        end
+  
+        if selfSettings.locked then
+          self:lock(true)
+        end
+      else 
+        if not self.forceOpen and self.autoOpen ~= nil and (self.autoOpen == 0 or self.autoOpen == false) and not self.containerWindow then
+          self:close(true)
+        end
+      end
+    end
+  
+    local newParent = self:getParent()
+  
+    self.miniLoaded = true
+  
+    if self.save then
+      if oldParent and oldParent:getClassName() == 'UIMiniWindowContainer' and not self.containerWindow then
+        addEvent(function() oldParent:order() end)
+      end
+      if newParent and newParent:getClassName() == 'UIMiniWindowContainer' and newParent ~= oldParent then
+        addEvent(function() newParent:order() end)
+      end
+    end
+  
+    self:fitOnParent()
+  end
+  
 function UIMiniWindow:setupOnStart()
     local char = g_game.getCharacterName()
     if not char or #char == 0 then
@@ -409,6 +477,31 @@ function UIMiniWindow:eraseSettings(data)
     end
 
     g_settings.setNode('CharMiniWindows', settings)
+end
+
+function UIMiniWindow:clearSettings()
+  if not self.save then return end
+
+  local settings = g_settings.getNode('MiniWindows')
+  if not settings then
+    settings = {}
+  end
+
+  local id = self:getId()
+  settings[id] = {}
+
+  g_settings.setNode('MiniWindows', settings)
+end
+
+function UIMiniWindow:saveParent(parent)
+  local parent = self:getParent()
+  if parent then
+    if parent:getClassName() == 'UIMiniWindowContainer' then
+      parent:saveChildren()
+    else
+      self:saveParentPosition(parent:getId(), self:getPosition())
+    end
+  end
 end
 
 function UIMiniWindow:saveParent(parent)

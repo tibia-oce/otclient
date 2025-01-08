@@ -1,5 +1,5 @@
 DeathWindow < MainWindow
-  id: DeathWindow
+  id: deathWindow
   !text: tr('You are dead')
   &baseWidth: 350
   &baseHeight: 15

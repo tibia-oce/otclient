@@ -241,9 +241,9 @@ namespace Proto
 
         // NOTE: add any custom opcodes in this range
         // 51 - 99
-        ClientRemoveLootCategory = 90,
-        ClientAddLootCategory = 91,
         ClientUpdateAutoLoot = 92,
+        ClientRemoveLootCategory = 94,
+        ClientAddLootCategory = 95,
 
         // original tibia ONLY
         ClientImbuementDurations = 96,

@@ -3014,6 +3014,7 @@ void ProtocolGame::parseModalDialog(const InputMessagePtr& msg)
         escapeButton = msg->getU8();
     }
 
+    // bool priority = msg->getU8() == 0x01;
     const bool priority = static_cast<bool>(msg->getU8());
 
     g_game.processModalDialog(windowId, title, message, buttonList, enterButton, escapeButton, choiceList, priority);
