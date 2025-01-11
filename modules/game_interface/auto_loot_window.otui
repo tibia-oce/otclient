@@ -112,15 +112,16 @@ Window
 
   UIWidget
     id: clearSearch
-    image-source: /images/options/button-clear
     anchors.top: prev.top
     margin-top: 1
     anchors.right: prev.right
     size: 20 20
+    image-source: /images/ui/button-clear-18x18-up
     @onClick: modules.game_interface.clearSearchEdit()
     focusable: false
     image-clip: 0 0 20 20
     $pressed:
+      image-source: /images/ui/button-clear-18x18-down
       image-clip: 0 20 20 20
 
   ScrollableFlatPanel

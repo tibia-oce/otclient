@@ -1,11 +1,25 @@
+local lootWindow = nil
+local categoriesIds = {
+	[LOOT_CATEGORY_GOLD] = {'Coins', 15},
+	[LOOT_CATEGORY_VALUABLES] = {'Valuables', 16},
+	[LOOT_CATEGORY_EQUIPMENT] = {'Equipment', 5},
+	[LOOT_CATEGORY_POTIONS] = {'Potions', 27},
+	[LOOT_CATEGORY_AMMUNITION] = {'Ammunition', 11},
+	[LOOT_CATEGORY_CREATURE_PRODUCTS] = {'Creature Products', 7},
+	[LOOT_CATEGORY_FOOD] = {'Food', 23},
+	[LOOT_CATEGORY_SPECIAL] = {'Special', 59},
+	[LOOT_CATEGORY_MISC] = {'Misc', 35}
+}
+
 function init()
-    g_ui.importStyle('container')
+    g_ui.importStyle('containers')
 
     connect(Container, {
         onOpen = onContainerOpen,
         onClose = onContainerClose,
         onSizeChange = onContainerChangeSize,
-        onUpdateItem = onContainerUpdateItem
+        onUpdateItem = onContainerUpdateItem,
+        onUpdate = onContainersUpdate
     })
     connect(Game, {
         onGameEnd = clean()
@@ -15,11 +29,13 @@ function init()
 end
 
 function terminate()
+    g_logger.warning("Terminating module...")
     disconnect(Container, {
         onOpen = onContainerOpen,
         onClose = onContainerClose,
         onSizeChange = onContainerChangeSize,
-        onUpdateItem = onContainerUpdateItem
+        onUpdateItem = onContainerUpdateItem,
+        onUpdate = onContainersUpdate
     })
     disconnect(Game, {
         onGameEnd = clean()
@@ -34,6 +50,7 @@ function reloadContainers()
 end
 
 function clean()
+    destroyLoot()
     for containerid, container in pairs(g_game.getContainers()) do
         destroy(container)
     end
@@ -48,16 +65,33 @@ function destroy(container)
 end
 
 function refreshContainerItems(container)
-    for slot = 0, container:getCapacity() - 1 do
-        local itemWidget = container.itemsPanel:getChildById('item' .. slot)
-        itemWidget:setItem(container:getItem(slot))
-        ItemsDatabase.setRarityItem(itemWidget, container:getItem(slot))
-        ItemsDatabase.setTier(itemWidget, container:getItem(slot))
+  g_logger.error("FrefreshContainerItems " .. container)
+  for slot=0,container:getCapacity()-1 do
+    local itemWidget = g_ui.createWidget('ContainerItem', containerPanel)
+    local item = container:getItem(slot)
+    itemWidget:setItem(item)
+    ItemsDatabase.setRarityItem(itemWidget, item)
+    ItemsDatabase.setTier(itemWidget, item)
+
+    local categoryIdWidget = itemWidget:getChildById('lootCategoryId')
+    if not categoryIdWidget then
+        g_logger.error("Failed to find 'lootCategoryId' for item at slot " .. slot)
+    else
+        categoryIdWidget:hide()
     end
 
-    if container:hasPages() then
-        refreshContainerPages(container)
+    if item then
+      local iconId = getIconId(item:getLootCategory())
+      if iconId ~= LOOT_CATEGORY_NONE then
+        categoryIdWidget:show()
+        setIconImageType(categoryIdWidget, iconId)
+      end
     end
+  end
+
+  if container:hasPages() then
+    refreshContainerPages(container)
+  end
 end
 
 function toggleContainerPages(containerWindow, pages)
@@ -93,6 +127,12 @@ function refreshContainerPages(container)
 end
 
 function onContainerOpen(container, previousContainer)
+    -- todo(autoloot)
+    g_logger.warning("Opening container with ID: " .. container:getId())
+    g_logger.warning("Container Name: " .. container:getName())
+    g_logger.warning("Capacity: " .. container:getCapacity())
+    g_logger.warning("Items Count: " .. container:getItemsCount())
+
     local containerWindow
     if previousContainer then
         containerWindow = previousContainer.window
@@ -117,6 +157,7 @@ function onContainerOpen(container, previousContainer)
 
     local upButton = containerWindow:getChildById('upButton')
     upButton.onClick = function()
+        g_logger.warning("Navigating to parent container...")
         g_game.openParent(container)
     end
     upButton:setVisible(container:hasParent())
@@ -136,13 +177,34 @@ function onContainerOpen(container, previousContainer)
 
     containerPanel:destroyChildren()
     for slot = 0, container:getCapacity() - 1 do
-        local itemWidget = g_ui.createWidget('Item', containerPanel)
+        g_logger.warning("Processing slot: " .. slot)
+        local itemWidget = g_ui.createWidget('ContainerItem', containerPanel)
+        local item = container:getItem(slot)
         itemWidget:setId('item' .. slot)
-        itemWidget:setItem(container:getItem(slot))
-        ItemsDatabase.setRarityItem(itemWidget, container:getItem(slot))
-        ItemsDatabase.setTier(itemWidget, container:getItem(slot))
+        itemWidget:setItem(item)
         itemWidget:setMargin(0)
         itemWidget.position = container:getSlotPosition(slot)
+        
+        if item then
+            g_logger.warning("Item ID: " .. item:getId())
+            g_logger.warning("Item Category: " .. item:getLootCategory())
+        else
+            g_logger.warning("Slot " .. slot .. " is empty.")
+        end
+
+        if not itemWidget then
+            g_logger.error("Failed to create item widget at slot " .. slot)
+        end
+
+        local categoryIdWidget = itemWidget:getChildById('lootCategoryId')
+        categoryIdWidget:hide()
+        if item then
+          local iconId = getIconId(item:getLootCategory())
+          if iconId ~= LOOT_CATEGORY_NONE then
+            categoryIdWidget:show()
+            setIconImageType(categoryIdWidget, iconId)
+          end
+        end
 
         if not container:isUnlocked() then
             itemWidget:setBorderColor('red')
@@ -183,13 +245,140 @@ function onContainerChangeSize(container, size)
     if not container.window then
         return
     end
+    g_logger.warning("Refreshing container items...")
     refreshContainerItems(container)
 end
 
 function onContainerUpdateItem(container, slot, item, oldItem)
-    if not container.window then
-        return
+  if not container.window then return end
+  local itemWidget = container.itemsPanel:getChildById('item' .. slot)
+  itemWidget:setItem(item)
+
+  local categoryIdWidget = itemWidget:getChildById('lootCategoryId')
+  categoryIdWidget:hide()
+  if item then
+    local iconId = getIconId(item:getLootCategory())
+    if iconId ~= LOOT_CATEGORY_NONE then
+      categoryIdWidget:show()
+      setIconImageType(categoryIdWidget, iconId)
     end
-    local itemWidget = container.itemsPanel:getChildById('item' .. slot)
-    itemWidget:setItem(item)
+  end
+end
+
+function onContainersUpdate(container)
+	if not container.window then return end
+    g_logger.warning("Refreshing container items...")
+	refreshContainerItems(container)
+end
+
+
+function destroyLoot()
+	if lootWindow then
+		lootWindow:destroy()
+		lootWindow = nil
+		categoriesList = nil
+		currentSelect = nil
+		acceptButton = nil
+	end
+end
+
+function addLootCategory()
+	if not lootWindow then
+		return false
+	end
+
+	if not currentSelect or currentSelect == 0 then
+		return false
+	end
+
+	g_game.addLootCategory(lootWindow.item, currentSelect)
+	destroyLoot()
+end
+
+function onRemoveLootCategory(item)
+	g_game.removeLootCategory(item)
+end
+
+function getIconId(flags)
+	local iconId = LOOT_CATEGORY_NONE
+	for k, v in pairs(categoriesIds) do
+		local bitValue = 2 ^ k
+		if g_game.bitoper(flags, bitValue, AND) then
+			if iconId ~= LOOT_CATEGORY_NONE then
+				return 52
+			end
+
+			iconId = v[2]
+		end
+	end
+
+	return iconId
+end
+
+function getCategoryIcon(flags)
+	local description = ""
+	for k, v in pairs(categoriesIds) do
+		local bitValue = 2 ^ k
+		if g_game.bitoper(flags, bitValue, AND) then
+			if description ~= "" then
+				description = description .. ", "
+			end
+
+			description = description .. v[1]
+		end
+	end
+
+	return description
+end
+
+function selectCategoryId(self, mousePosition, mouseButton)
+	if not lootWindow then
+		return false
+	end
+
+	if not currentSelect then
+		currentSelect = 0
+	end
+
+	local bitValue = 2 ^ tonumber(self:getId())
+	if g_game.bitoper(currentSelect, bitValue, AND) then
+		currentSelect = currentSelect - bitValue
+		self:setChecked(false)
+	else
+		currentSelect = currentSelect + bitValue
+		self:setChecked(true)
+	end
+
+	acceptButton:setEnabled(currentSelect ~= 0)
+end
+
+function getImageClip(id)
+	return (((id - 1) % 8) * 19) .. ' ' .. ((math.ceil(id / 8) - 1) * 19) .. ' ' .. 19 .. ' ' .. 19
+end
+
+function setIconImageType(widget, id)
+	widget:setImageClip(getImageClip(id))
+end
+
+function onLootCategory(item)
+	if not lootWindow then
+		lootWindow = g_ui.displayUI('container_loot_category')
+		lootWindow.item = item
+		categoriesList = lootWindow:getChildById('categoriesList')
+		acceptButton = lootWindow:getChildById('button')
+
+		local categoryFlags = item:getLootCategory()
+    for i = LOOT_CATEGORY_FIRST, LOOT_CATEGORY_LAST do
+			local widget = g_ui.createWidget('LootCategory', categoriesList)
+			widget:setText(categoriesIds[i][1])
+			widget:setId(i)
+			setIconImageType(widget:getChildById('categoryIcon'), categoriesIds[i][2])
+			widget.onMouseRelease = selectCategoryId
+
+			local bitValue = 2 ^ i
+			if g_game.bitoper(categoryFlags, bitValue, AND) then
+				selectCategoryId(widget)
+			end
+		end
+	end
 end
