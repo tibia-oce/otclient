@@ -400,7 +400,7 @@ void LocalPlayer::setStamina(uint16_t stamina)
     callLuaField("onStaminaChange", stamina, oldStamina);
 }
 
-void LocalPlayer::setInventoryItem(Otc::InventorySlot inventory, const ItemPtr& item)
+void LocalPlayer::setInventoryItem(Otc::InventorySlot inventory, const ItemPtr& item, uint16_t categoryId)
 {
     if (inventory >= Otc::LastInventorySlot) {
         g_logger.traceError("invalid slot");
@@ -409,7 +409,8 @@ void LocalPlayer::setInventoryItem(Otc::InventorySlot inventory, const ItemPtr& 
 
     if (m_inventoryItems[inventory] == item)
         return;
-
+    // todo(autoloot)
+    item->setLootCategory(categoryId); 
     const auto& oldItem = m_inventoryItems[inventory];
     m_inventoryItems[inventory] = item;
 
@@ -499,4 +500,57 @@ void LocalPlayer::setResourceBalance(Otc::ResourceTypes_t type, uint64_t value)
 bool LocalPlayer::hasSight(const Position& pos)
 {
     return m_position.isInRange(pos, g_map.getAwareRange().left - 1, g_map.getAwareRange().top - 1);
+}
+
+void LocalPlayer::addAutoLoot(uint16_t clientId, const std::string& name)
+{
+    if (!isInAutoLootList(clientId)) {
+        g_game.addAutoLoot(clientId, name);
+    }
+}
+
+void LocalPlayer::removeAutoLoot(uint16_t clientId, const std::string& name)
+{
+    if (isInAutoLootList(clientId)) {
+        g_game.removeAutoLoot(clientId, name);
+    }
+}
+
+bool LocalPlayer::isInAutoLootList(uint16_t clientId) 
+{
+    return m_autolootItems.find(clientId) != m_autolootItems.end();
+}
+
+void LocalPlayer::addToAutolootList(uint16_t clientId, const std::string& name)
+{
+    if (isInAutoLootList(clientId)) {
+        return;
+    }
+
+    m_autolootItems.emplace(clientId, name);
+    notifyAutoLootUpdate(clientId, name, false);
+}
+
+void LocalPlayer::removeFromAutolootList(uint16_t clientId)
+{
+    if (isInAutoLootList(clientId)) {
+        m_autolootItems.erase(clientId);
+        notifyAutoLootUpdate(clientId, "", true);
+    }
+}
+
+void LocalPlayer::manageAutoloot(const std::map<uint16_t, std::string>& items, bool remove)
+{
+    for (const auto& [id, name] : items) {
+        if (remove) {
+            removeFromAutolootList(id);
+        } else {
+            addToAutolootList(id, name);
+        }
+    }
+}
+
+void LocalPlayer::notifyAutoLootUpdate(uint16_t clientId, const std::string& name, bool remove)
+{
+    callLuaField("onUpdateAutoloot", clientId, name, remove);
 }

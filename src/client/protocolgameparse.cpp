@@ -580,6 +580,12 @@ void ProtocolGame::parseMessage(const InputMessagePtr& msg)
                 case Proto::GameServerStoreCompletePurchase:
                     parseCompleteStorePurchase(msg);
                     break;
+                case Proto::GameServerAutoloot:
+                    parseAutoloot(msg);
+                    break;
+                case Proto::GameServerUpdateContainer:
+                    parseUpdateContainer(msg);
+                    break;
                 default:
                     throw Exception("unhandled opcode %d", opcode);
                     break;
@@ -1373,7 +1379,9 @@ void ProtocolGame::parseOpenContainer(const InputMessagePtr& msg)
     items.reserve(itemCount);
 
     for (auto i = 0; i < itemCount; i++) {
-        items.push_back(getItem(msg));
+        // todo(autoloot)
+        items[i] = getItem(msg);
+        items[i]->setLootCategory(msg->getU16());
     }
 
     if (g_game.getFeature(Otc::GameContainerFilter)) {
@@ -1404,8 +1412,8 @@ void ProtocolGame::parseContainerAddItem(const InputMessagePtr& msg)
     const uint8_t containerId = msg->getU8();
     const uint16_t slot = g_game.getFeature(Otc::GameContainerPagination) ? msg->getU16() : 0;
     const auto& item = getItem(msg);
-
-    g_game.processContainerAddItem(containerId, item, slot);
+    uint16_t categoryId = msg->getU16();
+    g_game.processContainerAddItem(containerId, item, slot, categoryId);
 }
 
 void ProtocolGame::parseContainerUpdateItem(const InputMessagePtr& msg)
@@ -1413,8 +1421,8 @@ void ProtocolGame::parseContainerUpdateItem(const InputMessagePtr& msg)
     const uint8_t containerId = msg->getU8();
     const uint16_t slot = g_game.getFeature(Otc::GameContainerPagination) ? msg->getU16() : msg->getU8();
     const auto& item = getItem(msg);
-
-    g_game.processContainerUpdateItem(containerId, slot, item);
+    uint16_t categoryId = msg->getU16();
+    g_game.processContainerUpdateItem(containerId, slot, item, categoryId);
 }
 
 void ProtocolGame::parseContainerRemoveItem(const InputMessagePtr& msg)
@@ -1484,14 +1492,37 @@ void ProtocolGame::parseAddInventoryItem(const InputMessagePtr& msg)
 {
     const uint8_t slot = msg->getU8();
     const auto& item = getItem(msg);
-
-    g_game.processInventoryChange(slot, item);
+    uint16_t categoryId = msg->getU16();
+    g_game.processInventoryChange(slot, item, categoryId);
 }
 
 void ProtocolGame::parseRemoveInventoryItem(const InputMessagePtr& msg)
 {
     const uint8_t slot = msg->getU8();
-    g_game.processInventoryChange(slot, ItemPtr());
+    g_game.processInventoryChange(slot, ItemPtr(), 0);
+}
+
+void ProtocolGame::parseAutoloot(const InputMessagePtr& msg)
+{
+    bool remove = msg->getU8() == 1;
+    uint16_t size = msg->getU16();
+
+    if (msg->getUnreadSize() < size * (sizeof(uint16_t) + 1)) {
+        g_logger.error("Invalid autoloot data size [0x60 - ProtocolGame::parseAutoloot]");
+        return;
+    }
+    std::map<uint16_t, std::string> autolootItems;
+    for (uint16_t i = 1; i <= size; ++i) {
+        autolootItems.insert_or_assign(msg->getU16(), msg->getString());
+    }
+
+    m_localPlayer->manageAutoloot(autolootItems, remove);
+}
+
+void ProtocolGame::parseUpdateContainer(const InputMessagePtr& msg)
+{
+    int containerId = msg->getU8();
+    g_game.processUpdateContainer(containerId);
 }
 
 void ProtocolGame::parseOpenNpcTrade(const InputMessagePtr& msg)
