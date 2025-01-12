@@ -51,7 +51,7 @@ public:
     void setStamina(uint16_t stamina);
     void setKnown(bool known) { m_known = known; }
     void setPendingGame(bool pending) { m_pending = pending; }
-    void setInventoryItem(Otc::InventorySlot inventory, const ItemPtr& item);
+    void setInventoryItem(Otc::InventorySlot inventory, const ItemPtr& item, uint16_t categoryId);
     void setVocation(uint8_t vocation);
     void setPremium(bool premium);
     void setRegenerationTime(uint16_t regenerationTime);
@@ -102,6 +102,15 @@ public:
         const uint64_t equippedBalance = getResourceBalance(Otc::RESOURCE_GOLD_EQUIPPED);
         return bankBalance + equippedBalance;
     }
+
+    void addAutoLoot(uint16_t clientId, const std::string& name);
+    void removeAutoLoot(uint16_t clientId, const std::string& name);
+    bool isInAutoLootList(uint16_t clientId);
+    void addToAutolootList(uint16_t clientId, const std::string& name);
+    void removeFromAutolootList(uint16_t clientId);
+    void manageAutoloot(const std::map<uint16_t, std::string>& items, bool remove);
+    void notifyAutoLootUpdate(uint16_t clientId, const std::string& name, bool remove);
+    std::map<uint16_t, std::string> getAutolootItems() { return m_autolootItems; }
 
     bool hasSight(const Position& pos);
     bool isKnown() { return m_known; }
@@ -158,6 +167,7 @@ private:
     std::vector<uint16_t> m_spells;
 
     stdext::map<Otc::ResourceTypes_t, uint64_t> m_resourcesBalance;
+    std::map<uint16_t, std::string> m_autolootItems;
 
     uint8_t m_autoWalkRetries{ 0 };
 

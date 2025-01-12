@@ -65,6 +65,7 @@ enum ItemAttr : uint8_t
     ATTR_ARTICLE = 41,
     ATTR_SCRIPTPROTECTED = 42,
     ATTR_DUALWIELD = 43,
+    ATTR_LOOT_CATEGORY = 44,
     ATTR_ATTRIBUTE_MAP = 128,
     ATTR_LAST
 };
@@ -89,7 +90,8 @@ public:
     void setTooltip(const std::string& str) { m_tooltip = str; }
     void setDurationTime(const uint32_t durationTime) { m_durationTime = durationTime; }
     void setTier(const uint8_t tier) { m_tier = tier; }
-
+    void setLootCategory(uint16_t categoryId) { m_attribs.set(ATTR_LOOT_CATEGORY, categoryId); }
+    uint16_t getLootCategory() { return m_attribs.get<uint16_t>(ATTR_LOOT_CATEGORY); }
     int getCountOrSubType() { return m_countOrSubType; }
     int getSubType();
     int getCount() { return isStackable() ? m_countOrSubType : 1; }
@@ -171,10 +173,10 @@ private:
 
     bool m_async{ true };
     std::string m_tooltip;
+    stdext::dynamic_storage<ItemAttr> m_attribs;  // todo(autoloot)
 
 #ifdef FRAMEWORK_EDITOR
     uint16_t m_serverId{ 0 };
-    stdext::dynamic_storage<ItemAttr> m_attribs;
     ItemVector m_containerItems;
 #endif
 };

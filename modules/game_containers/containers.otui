@@ -5,6 +5,9 @@ PageButton < Button
 
 ContainerWindow < MiniWindow
   height: 150
+  text-overflow-length: 18
+  &save: true
+  &containerWindow: true
 
   UIItem
     id: containerItemWidget
@@ -12,13 +15,13 @@ ContainerWindow < MiniWindow
     size: 16 16
     anchors.top: parent.top
     anchors.left: parent.left
-    margin-top: 4
-    margin-left: 4
+    margin-top: 1
+    margin-left: 3
 
   UIButton
     id: upButton
-    anchors.top: minimizeButton.top
-    anchors.right: minimizeButton.left
+    anchors.top: lockButton.top
+    anchors.right: lockButton.left
     margin-right: 3
     size: 14 14
     image-source: /images/ui/miniwindow_buttons
@@ -35,10 +38,15 @@ ContainerWindow < MiniWindow
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.top: miniwindowTopBar.bottom
-    height: 20
-    margin: 2 3 0 3
+    margin: 1 3 0 3
     background: #00000066
-    visible: false
+    height: 20
+    
+    $on:
+      visible: true
+
+    $!on:
+      visible: false
 
     Label
       id: pageLabel
@@ -60,9 +68,25 @@ ContainerWindow < MiniWindow
       anchors.right: parent.right
 
   MiniWindowContents
-    padding-left: 5
+    padding-right: 0
     layout:
       type: grid
       cell-size: 34 34
-      cell-spacing: 3
       flow: true
+
+ContainerItem < Item
+  UIWidget
+    id: lootCategoryId
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    image-source: icons
+    size: 19 19
+    phantom: true
+    visible: false
+
+  UIWidget
+    id: rarityId
+    anchors.fill: parent
+    image-source: /images/ui/rarity_frames
+    phantom: true
+    visible: false

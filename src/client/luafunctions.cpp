@@ -378,6 +378,8 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_game", "requestBossSlootInfo", &Game::requestBossSlootInfo, &g_game);
     g_lua.bindSingletonFunction("g_game", "requestBossSlotAction", &Game::requestBossSlotAction, &g_game);
     g_lua.bindSingletonFunction("g_game", "sendStatusTrackerBestiary", &Game::sendStatusTrackerBestiary, &g_game);
+    g_lua.bindSingletonFunction("g_game", "removeLootCategory", &Game::removeLootCategory, &g_game);
+    g_lua.bindSingletonFunction("g_game", "addLootCategory", &Game::addLootCategory, &g_game);
 
     g_lua.registerSingletonClass("g_gameConfig");
     g_lua.bindSingletonFunction("g_gameConfig", "loadFonts", &GameConfig::loadFonts, &g_gameConfig);
@@ -696,7 +698,7 @@ void Client::registerLuaFunctions()
 
     g_lua.bindClassMemberFunction<Item>("setCount", &Item::setCount);
     g_lua.bindClassMemberFunction<Item>("setTooltip", &Item::setTooltip);
-
+    g_lua.bindClassMemberFunction<Item>("getLootCategory", &Item::getLootCategory);
     g_lua.bindClassMemberFunction<Item>("getCount", &Item::getCount);
     g_lua.bindClassMemberFunction<Item>("getSubType", &Item::getSubType);
     g_lua.bindClassMemberFunction<Item>("getCountOrSubType", &Item::getCountOrSubType);
@@ -837,6 +839,11 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<LocalPlayer>("getBaseMagicLevel", &LocalPlayer::getBaseMagicLevel);
     g_lua.bindClassMemberFunction<LocalPlayer>("getTotalCapacity", &LocalPlayer::getTotalCapacity);
     g_lua.bindClassMemberFunction<LocalPlayer>("getInventoryItem", &LocalPlayer::getInventoryItem);
+    g_lua.bindClassMemberFunction<LocalPlayer>("removeAutoLoot", &LocalPlayer::removeAutoLoot);
+    g_lua.bindClassMemberFunction<LocalPlayer>("addAutoLoot", &LocalPlayer::addAutoLoot);
+    g_lua.bindClassMemberFunction<LocalPlayer>("isInAutoLootList", &LocalPlayer::isInAutoLootList);
+    g_lua.bindClassMemberFunction<LocalPlayer>("getAutolootItems", &LocalPlayer::getAutolootItems);
+
     g_lua.bindClassMemberFunction<LocalPlayer>("getVocation", &LocalPlayer::getVocation);
     g_lua.bindClassMemberFunction<LocalPlayer>("getBlessings", &LocalPlayer::getBlessings);
     g_lua.bindClassMemberFunction<LocalPlayer>("isPremium", &LocalPlayer::isPremium);

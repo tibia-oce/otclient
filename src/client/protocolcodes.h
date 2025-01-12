@@ -78,6 +78,8 @@ namespace Proto
         GameServerMapShader = 55,
         GameServerCreatureTyping = 56,
         GameServerFloorDescription = 75,
+        GameServerUpdateContainer = 84,
+        GameServerAutoloot = 96,
 
         // original tibia ONLY
         GameServerImbuementDurations = 93,
@@ -238,7 +240,10 @@ namespace Proto
         ClientChangeMapAwareRange = 51,
 
         // NOTE: add any custom opcodes in this range
-        // 51 - 99
+        // 51 - 99,
+        ClientRemoveLootCategory            = 94,
+        ClientAddLootCategory               = 95,
+        ClientUpdateAutoLoot                = 97, // todo(autoloot):
 
         // original tibia ONLY
         ClientImbuementDurations = 96,

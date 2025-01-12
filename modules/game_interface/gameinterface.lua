@@ -43,6 +43,9 @@ function init()
         onLoginAdvice = onLoginAdvice
     }, true)
 
+    connect(LocalPlayer, {
+		onUpdateAutoloot = onUpdateAutoloot
+	})
     -- Call load AFTER game window has been created and
     -- resized to a stable state, otherwise the saved
     -- settings can get overridden by false onGeometryChange
@@ -61,6 +64,10 @@ function init()
         onExit = save
     })
 
+    disconnect(LocalPlayer, {
+		onUpdateAutoloot = onUpdateAutoloot
+	})
+    
     gameRootPanel = g_ui.displayUI('gameinterface')
     gameRootPanel:hide()
     gameRootPanel:lower()
@@ -656,6 +663,7 @@ function createThingMenu(menuPosition, lookThing, useThing, creatureThing)
         end, shortcut)
     end
 
+    local localPlayer = g_game.getLocalPlayer()
     if not classic then
         shortcut = '(Ctrl)'
     else
@@ -675,6 +683,16 @@ function createThingMenu(menuPosition, lookThing, useThing, creatureThing)
                     g_game.open(useThing)
                 end, shortcut)
             end
+            if not useThing:isNotMoveable() and useThing:isPickupable() then
+                if useThing:getLootCategory() ~= 0 then
+                  menu:addSeparator()
+                  menu:addOption(tr('Remove loot category'), function() modules.game_containers.onRemoveLootCategory(useThing) end, shortcut )
+                  menu:addOption(tr('Edit loot category'), function() modules.game_containers.onLootCategory(useThing) end, shortcut )
+                  menu:addOption(tr('Pass loot category'), function() g_game.addLootCategory(useThing, LOOT_CATEGORY_COPY) end, shortcut )
+                elseif useThing:getParentContainer() then
+                  menu:addOption(tr('Add loot category'), function() modules.game_containers.onLootCategory(useThing) end, shortcut )
+                end
+            end
         else
             if useThing:isMultiUse() then
                 menu:addOption(tr('Use with ...'), function()
@@ -684,6 +702,15 @@ function createThingMenu(menuPosition, lookThing, useThing, creatureThing)
                 menu:addOption(tr('Use'), function()
                     g_game.use(useThing)
                 end, shortcut)
+            end
+        end
+        if useThing:isPickupable() then
+            menu:addSeparator()
+            menu:addOption(tr('Open auto loot list'), function() openAutolootWindow() end, shortcut )
+            if localPlayer:isInAutoLootList(useThing:getId()) then
+              menu:addOption(tr('Remove from auto loot list'), function() localPlayer:removeAutoLoot(useThing:getId()) end, shortcut )
+            else
+              menu:addOption(tr('Add to auto loot list'), function() localPlayer:addAutoLoot(useThing:getId()) end, shortcut )
             end
         end
 
@@ -1377,4 +1404,107 @@ function checkAndOpenLeftPanel()
         modules.client_options.setOption('showLeftPanel', true)
         return
     end
+end
+
+
+function updateTextEdit(self)
+  autolootAcceptButton:setEnabled(self:getText() ~= "")
+end
+
+function updateSearchEdit(self)
+  if not autolootItemsList then
+    return true
+  end
+
+  local text = self:getText()
+  for _, widget in pairs(autolootItemsList:getChildren()) do
+    if string.find(widget.name:lower(), text:lower()) then
+      widget:show()
+    else
+      widget:hide()
+    end
+  end
+end
+
+function clearSearchEdit()
+  if not autolootWindow then
+    return true
+  end
+  autolootWindow:getChildById("textSearch"):clearText()
+end
+
+function onUpdateAutoloot(self, id, name, remove)
+  if not autolootItemsList then
+    return true
+  end
+
+  if remove then
+    local widget = autolootItemsList:getChildById(id)
+    if widget then
+      widget:destroy()
+    end
+  else
+    local widget = g_ui.createWidget("AutolootItem", autolootItemsList)
+    widget.name = name
+    widget:setId(id)
+    widget:getChildById("item"):setItemId(id)
+    widget:getChildById("name"):setText(name)
+  end
+  autolootTextEdit:clearText()
+end
+
+function closeAutolootWindow()
+  if not autolootWindow then
+    return true
+  end
+
+  autolootWindow:destroy()
+  autolootWindow = nil
+  autolootItemsList = nil
+  autolootAcceptButton = nil
+  autolootTextEdit = nil
+end
+
+function openAutolootWindow(clientId)
+  if  autolootWindow then
+    return true
+  end
+
+  autolootWindow = g_ui.displayUI('auto_loot_window')
+  autolootWindow.clientId = clientId
+  autolootItemsList = autolootWindow:getChildById('itemsList')
+  autolootAcceptButton = autolootWindow:getChildById('button')
+  autolootTextEdit = autolootWindow:getChildById('textEdit')
+  autolootTextEdit:setText(clientId)
+
+  local localPlayer = g_game.getLocalPlayer()
+  local items = localPlayer:getAutolootItems()
+  for id, name in pairs(items) do
+    onUpdateAutoloot(localPlayer, id, name, false)
+  end
+end
+
+function removeFromAutolootList(self)
+  local localPlayer = g_game.getLocalPlayer()
+  localPlayer:removeAutoLoot(tonumber(self:getId()), "")
+end
+
+function addToAutolootList()
+  print(1)
+  if not autolootWindow then
+    return true
+  end
+
+  print(2)
+  local localPlayer = g_game.getLocalPlayer()
+  local text = autolootTextEdit:getText()
+  if tonumber(text) then
+    -- Send clientId
+    localPlayer:addAutoLoot(tonumber(text), "")
+    print(3)
+  else
+    -- Send name
+    localPlayer:addAutoLoot(0, text)
+    print(4)
+  end
 end
