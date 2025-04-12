@@ -313,3 +313,6 @@ google-services.json
 android/app/libs
 android/app/src/main/assets
 data/things
+.project/
+cmake/
+tools/
